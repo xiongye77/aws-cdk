@@ -1,0 +1,1009 @@
+{
+  "Resources": {
+    "devVPC524BF54C": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "CidrBlock": "172.32.0.0/16",
+        "EnableDnsHostnames": true,
+        "EnableDnsSupport": true,
+        "InstanceTenancy": "default",
+        "Tags": [
+          {
+            "Key": "Cost Center",
+            "Value": "AABBCC"
+          },
+          {
+            "Key": "Department",
+            "Value": "R&D"
+          },
+          {
+            "Key": "Name",
+            "Value": "vpc/devVPC"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "vpc/devVPC/Resource"
+      }
+    },
+    "devVPCPublicSubnet1Subnet2E5540AB": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "CidrBlock": "172.32.0.0/24",
+        "VpcId": {
+          "Ref": "devVPC524BF54C"
+        },
+        "AvailabilityZone": {
+          "Fn::Select": [
+            0,
+            {
+              "Fn::GetAZs": ""
+            }
+          ]
+        },
+        "MapPublicIpOnLaunch": true,
+        "Tags": [
+          {
+            "Key": "aws-cdk:subnet-name",
+            "Value": "Public"
+          },
+          {
+            "Key": "aws-cdk:subnet-type",
+            "Value": "Public"
+          },
+          {
+            "Key": "Cost Center",
+            "Value": "AABBCC"
+          },
+          {
+            "Key": "Department",
+            "Value": "R&D"
+          },
+          {
+            "Key": "Name",
+            "Value": "vpc/devVPC/PublicSubnet1"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "vpc/devVPC/PublicSubnet1/Subnet"
+      }
+    },
+    "devVPCPublicSubnet1RouteTableD693476A": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "devVPC524BF54C"
+        },
+        "Tags": [
+          {
+            "Key": "Cost Center",
+            "Value": "AABBCC"
+          },
+          {
+            "Key": "Department",
+            "Value": "R&D"
+          },
+          {
+            "Key": "Name",
+            "Value": "vpc/devVPC/PublicSubnet1"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "vpc/devVPC/PublicSubnet1/RouteTable"
+      }
+    },
+    "devVPCPublicSubnet1RouteTableAssociationACF1C4FE": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "devVPCPublicSubnet1RouteTableD693476A"
+        },
+        "SubnetId": {
+          "Ref": "devVPCPublicSubnet1Subnet2E5540AB"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "vpc/devVPC/PublicSubnet1/RouteTableAssociation"
+      }
+    },
+    "devVPCPublicSubnet1DefaultRoute030E77C6": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "devVPCPublicSubnet1RouteTableD693476A"
+        },
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "GatewayId": {
+          "Ref": "devVPCIGW3A5029B7"
+        }
+      },
+      "DependsOn": [
+        "devVPCVPCGWD5E19824"
+      ],
+      "Metadata": {
+        "aws:cdk:path": "vpc/devVPC/PublicSubnet1/DefaultRoute"
+      }
+    },
+    "devVPCPublicSubnet1EIP3F331112": {
+      "Type": "AWS::EC2::EIP",
+      "Properties": {
+        "Domain": "vpc",
+        "Tags": [
+          {
+            "Key": "Cost Center",
+            "Value": "AABBCC"
+          },
+          {
+            "Key": "Department",
+            "Value": "R&D"
+          },
+          {
+            "Key": "Name",
+            "Value": "vpc/devVPC/PublicSubnet1"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "vpc/devVPC/PublicSubnet1/EIP"
+      }
+    },
+    "devVPCPublicSubnet1NATGatewayED579EE6": {
+      "Type": "AWS::EC2::NatGateway",
+      "Properties": {
+        "AllocationId": {
+          "Fn::GetAtt": [
+            "devVPCPublicSubnet1EIP3F331112",
+            "AllocationId"
+          ]
+        },
+        "SubnetId": {
+          "Ref": "devVPCPublicSubnet1Subnet2E5540AB"
+        },
+        "Tags": [
+          {
+            "Key": "Cost Center",
+            "Value": "AABBCC"
+          },
+          {
+            "Key": "Department",
+            "Value": "R&D"
+          },
+          {
+            "Key": "Name",
+            "Value": "vpc/devVPC/PublicSubnet1"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "vpc/devVPC/PublicSubnet1/NATGateway"
+      }
+    },
+    "devVPCPublicSubnet2Subnet2C6C27AC": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "CidrBlock": "172.32.1.0/24",
+        "VpcId": {
+          "Ref": "devVPC524BF54C"
+        },
+        "AvailabilityZone": {
+          "Fn::Select": [
+            1,
+            {
+              "Fn::GetAZs": ""
+            }
+          ]
+        },
+        "MapPublicIpOnLaunch": true,
+        "Tags": [
+          {
+            "Key": "aws-cdk:subnet-name",
+            "Value": "Public"
+          },
+          {
+            "Key": "aws-cdk:subnet-type",
+            "Value": "Public"
+          },
+          {
+            "Key": "Cost Center",
+            "Value": "AABBCC"
+          },
+          {
+            "Key": "Department",
+            "Value": "R&D"
+          },
+          {
+            "Key": "Name",
+            "Value": "vpc/devVPC/PublicSubnet2"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "vpc/devVPC/PublicSubnet2/Subnet"
+      }
+    },
+    "devVPCPublicSubnet2RouteTable263FF99F": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "devVPC524BF54C"
+        },
+        "Tags": [
+          {
+            "Key": "Cost Center",
+            "Value": "AABBCC"
+          },
+          {
+            "Key": "Department",
+            "Value": "R&D"
+          },
+          {
+            "Key": "Name",
+            "Value": "vpc/devVPC/PublicSubnet2"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "vpc/devVPC/PublicSubnet2/RouteTable"
+      }
+    },
+    "devVPCPublicSubnet2RouteTableAssociationE6FD518E": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "devVPCPublicSubnet2RouteTable263FF99F"
+        },
+        "SubnetId": {
+          "Ref": "devVPCPublicSubnet2Subnet2C6C27AC"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "vpc/devVPC/PublicSubnet2/RouteTableAssociation"
+      }
+    },
+    "devVPCPublicSubnet2DefaultRouteF9447A4E": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "devVPCPublicSubnet2RouteTable263FF99F"
+        },
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "GatewayId": {
+          "Ref": "devVPCIGW3A5029B7"
+        }
+      },
+      "DependsOn": [
+        "devVPCVPCGWD5E19824"
+      ],
+      "Metadata": {
+        "aws:cdk:path": "vpc/devVPC/PublicSubnet2/DefaultRoute"
+      }
+    },
+    "devVPCPrivateSubnet1Subnet712E0217": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "CidrBlock": "172.32.2.0/24",
+        "VpcId": {
+          "Ref": "devVPC524BF54C"
+        },
+        "AvailabilityZone": {
+          "Fn::Select": [
+            0,
+            {
+              "Fn::GetAZs": ""
+            }
+          ]
+        },
+        "MapPublicIpOnLaunch": false,
+        "Tags": [
+          {
+            "Key": "aws-cdk:subnet-name",
+            "Value": "Private"
+          },
+          {
+            "Key": "aws-cdk:subnet-type",
+            "Value": "Private"
+          },
+          {
+            "Key": "Cost Center",
+            "Value": "AABBCC"
+          },
+          {
+            "Key": "Department",
+            "Value": "R&D"
+          },
+          {
+            "Key": "Name",
+            "Value": "vpc/devVPC/PrivateSubnet1"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "vpc/devVPC/PrivateSubnet1/Subnet"
+      }
+    },
+    "devVPCPrivateSubnet1RouteTable46900521": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "devVPC524BF54C"
+        },
+        "Tags": [
+          {
+            "Key": "Cost Center",
+            "Value": "AABBCC"
+          },
+          {
+            "Key": "Department",
+            "Value": "R&D"
+          },
+          {
+            "Key": "Name",
+            "Value": "vpc/devVPC/PrivateSubnet1"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "vpc/devVPC/PrivateSubnet1/RouteTable"
+      }
+    },
+    "devVPCPrivateSubnet1RouteTableAssociation8B9FE954": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "devVPCPrivateSubnet1RouteTable46900521"
+        },
+        "SubnetId": {
+          "Ref": "devVPCPrivateSubnet1Subnet712E0217"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "vpc/devVPC/PrivateSubnet1/RouteTableAssociation"
+      }
+    },
+    "devVPCPrivateSubnet1DefaultRoute4148311F": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "devVPCPrivateSubnet1RouteTable46900521"
+        },
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "NatGatewayId": {
+          "Ref": "devVPCPublicSubnet1NATGatewayED579EE6"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "vpc/devVPC/PrivateSubnet1/DefaultRoute"
+      }
+    },
+    "devVPCPrivateSubnet2SubnetAA0D521D": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "CidrBlock": "172.32.3.0/24",
+        "VpcId": {
+          "Ref": "devVPC524BF54C"
+        },
+        "AvailabilityZone": {
+          "Fn::Select": [
+            1,
+            {
+              "Fn::GetAZs": ""
+            }
+          ]
+        },
+        "MapPublicIpOnLaunch": false,
+        "Tags": [
+          {
+            "Key": "aws-cdk:subnet-name",
+            "Value": "Private"
+          },
+          {
+            "Key": "aws-cdk:subnet-type",
+            "Value": "Private"
+          },
+          {
+            "Key": "Cost Center",
+            "Value": "AABBCC"
+          },
+          {
+            "Key": "Department",
+            "Value": "R&D"
+          },
+          {
+            "Key": "Name",
+            "Value": "vpc/devVPC/PrivateSubnet2"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "vpc/devVPC/PrivateSubnet2/Subnet"
+      }
+    },
+    "devVPCPrivateSubnet2RouteTableBCC75866": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "devVPC524BF54C"
+        },
+        "Tags": [
+          {
+            "Key": "Cost Center",
+            "Value": "AABBCC"
+          },
+          {
+            "Key": "Department",
+            "Value": "R&D"
+          },
+          {
+            "Key": "Name",
+            "Value": "vpc/devVPC/PrivateSubnet2"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "vpc/devVPC/PrivateSubnet2/RouteTable"
+      }
+    },
+    "devVPCPrivateSubnet2RouteTableAssociation8ABBFCEB": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "devVPCPrivateSubnet2RouteTableBCC75866"
+        },
+        "SubnetId": {
+          "Ref": "devVPCPrivateSubnet2SubnetAA0D521D"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "vpc/devVPC/PrivateSubnet2/RouteTableAssociation"
+      }
+    },
+    "devVPCPrivateSubnet2DefaultRouteBD18D8FF": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "devVPCPrivateSubnet2RouteTableBCC75866"
+        },
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "NatGatewayId": {
+          "Ref": "devVPCPublicSubnet1NATGatewayED579EE6"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "vpc/devVPC/PrivateSubnet2/DefaultRoute"
+      }
+    },
+    "devVPCIsolatedSubnet1Subnet1A2735F3": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "CidrBlock": "172.32.4.0/24",
+        "VpcId": {
+          "Ref": "devVPC524BF54C"
+        },
+        "AvailabilityZone": {
+          "Fn::Select": [
+            0,
+            {
+              "Fn::GetAZs": ""
+            }
+          ]
+        },
+        "MapPublicIpOnLaunch": false,
+        "Tags": [
+          {
+            "Key": "aws-cdk:subnet-name",
+            "Value": "Isolated"
+          },
+          {
+            "Key": "aws-cdk:subnet-type",
+            "Value": "Isolated"
+          },
+          {
+            "Key": "Cost Center",
+            "Value": "AABBCC"
+          },
+          {
+            "Key": "Department",
+            "Value": "R&D"
+          },
+          {
+            "Key": "Name",
+            "Value": "vpc/devVPC/IsolatedSubnet1"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "vpc/devVPC/IsolatedSubnet1/Subnet"
+      }
+    },
+    "devVPCIsolatedSubnet1RouteTableFB79FE72": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "devVPC524BF54C"
+        },
+        "Tags": [
+          {
+            "Key": "Cost Center",
+            "Value": "AABBCC"
+          },
+          {
+            "Key": "Department",
+            "Value": "R&D"
+          },
+          {
+            "Key": "Name",
+            "Value": "vpc/devVPC/IsolatedSubnet1"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "vpc/devVPC/IsolatedSubnet1/RouteTable"
+      }
+    },
+    "devVPCIsolatedSubnet1RouteTableAssociation19A82E3F": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "devVPCIsolatedSubnet1RouteTableFB79FE72"
+        },
+        "SubnetId": {
+          "Ref": "devVPCIsolatedSubnet1Subnet1A2735F3"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "vpc/devVPC/IsolatedSubnet1/RouteTableAssociation"
+      }
+    },
+    "devVPCIsolatedSubnet2SubnetD2338F17": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "CidrBlock": "172.32.5.0/24",
+        "VpcId": {
+          "Ref": "devVPC524BF54C"
+        },
+        "AvailabilityZone": {
+          "Fn::Select": [
+            1,
+            {
+              "Fn::GetAZs": ""
+            }
+          ]
+        },
+        "MapPublicIpOnLaunch": false,
+        "Tags": [
+          {
+            "Key": "aws-cdk:subnet-name",
+            "Value": "Isolated"
+          },
+          {
+            "Key": "aws-cdk:subnet-type",
+            "Value": "Isolated"
+          },
+          {
+            "Key": "Cost Center",
+            "Value": "AABBCC"
+          },
+          {
+            "Key": "Department",
+            "Value": "R&D"
+          },
+          {
+            "Key": "Name",
+            "Value": "vpc/devVPC/IsolatedSubnet2"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "vpc/devVPC/IsolatedSubnet2/Subnet"
+      }
+    },
+    "devVPCIsolatedSubnet2RouteTable4AEAC114": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "devVPC524BF54C"
+        },
+        "Tags": [
+          {
+            "Key": "Cost Center",
+            "Value": "AABBCC"
+          },
+          {
+            "Key": "Department",
+            "Value": "R&D"
+          },
+          {
+            "Key": "Name",
+            "Value": "vpc/devVPC/IsolatedSubnet2"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "vpc/devVPC/IsolatedSubnet2/RouteTable"
+      }
+    },
+    "devVPCIsolatedSubnet2RouteTableAssociation80F245F9": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "devVPCIsolatedSubnet2RouteTable4AEAC114"
+        },
+        "SubnetId": {
+          "Ref": "devVPCIsolatedSubnet2SubnetD2338F17"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "vpc/devVPC/IsolatedSubnet2/RouteTableAssociation"
+      }
+    },
+    "devVPCIGW3A5029B7": {
+      "Type": "AWS::EC2::InternetGateway",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "Cost Center",
+            "Value": "AABBCC"
+          },
+          {
+            "Key": "Department",
+            "Value": "R&D"
+          },
+          {
+            "Key": "Name",
+            "Value": "vpc/devVPC"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "vpc/devVPC/IGW"
+      }
+    },
+    "devVPCVPCGWD5E19824": {
+      "Type": "AWS::EC2::VPCGatewayAttachment",
+      "Properties": {
+        "VpcId": {
+          "Ref": "devVPC524BF54C"
+        },
+        "InternetGatewayId": {
+          "Ref": "devVPCIGW3A5029B7"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "vpc/devVPC/VPCGW"
+      }
+    },
+    "privatesubnet1ABCDFA53": {
+      "Type": "AWS::SSM::Parameter",
+      "Properties": {
+        "Type": "String",
+        "Value": {
+          "Ref": "devVPCPrivateSubnet1Subnet712E0217"
+        },
+        "Name": "/dev/private-subnet-1"
+      },
+      "Metadata": {
+        "aws:cdk:path": "vpc/private-subnet-1/Resource"
+      }
+    },
+    "privatesubnet2260E229D": {
+      "Type": "AWS::SSM::Parameter",
+      "Properties": {
+        "Type": "String",
+        "Value": {
+          "Ref": "devVPCPrivateSubnet2SubnetAA0D521D"
+        },
+        "Name": "/dev/private-subnet-2"
+      },
+      "Metadata": {
+        "aws:cdk:path": "vpc/private-subnet-2/Resource"
+      }
+    },
+    "publicsubnet1B08CBF31": {
+      "Type": "AWS::SSM::Parameter",
+      "Properties": {
+        "Type": "String",
+        "Value": {
+          "Ref": "devVPCPublicSubnet1Subnet2E5540AB"
+        },
+        "Name": "/dev/public-subnet-1"
+      },
+      "Metadata": {
+        "aws:cdk:path": "vpc/public-subnet-1/Resource"
+      }
+    },
+    "publicsubnet28C457B44": {
+      "Type": "AWS::SSM::Parameter",
+      "Properties": {
+        "Type": "String",
+        "Value": {
+          "Ref": "devVPCPublicSubnet2Subnet2C6C27AC"
+        },
+        "Name": "/dev/public-subnet-2"
+      },
+      "Metadata": {
+        "aws:cdk:path": "vpc/public-subnet-2/Resource"
+      }
+    },
+    "CDKMetadata": {
+      "Type": "AWS::CDK::Metadata",
+      "Properties": {
+        "Modules": "aws-cdk=1.71.0,@aws-cdk/assets=1.51.0,@aws-cdk/aws-apigateway=1.51.0,@aws-cdk/aws-applicationautoscaling=1.51.0,@aws-cdk/aws-autoscaling=1.51.0,@aws-cdk/aws-autoscaling-common=1.51.0,@aws-cdk/aws-autoscaling-hooktargets=1.51.0,@aws-cdk/aws-batch=1.51.0,@aws-cdk/aws-certificatemanager=1.51.0,@aws-cdk/aws-cloudformation=1.51.0,@aws-cdk/aws-cloudfront=1.51.0,@aws-cdk/aws-cloudtrail=1.51.0,@aws-cdk/aws-cloudwatch=1.51.0,@aws-cdk/aws-codebuild=1.51.0,@aws-cdk/aws-codecommit=1.51.0,@aws-cdk/aws-codedeploy=1.51.0,@aws-cdk/aws-codepipeline=1.51.0,@aws-cdk/aws-codepipeline-actions=1.51.0,@aws-cdk/aws-cognito=1.51.0,@aws-cdk/aws-ec2=1.51.0,@aws-cdk/aws-ecr=1.51.0,@aws-cdk/aws-ecr-assets=1.51.0,@aws-cdk/aws-ecs=1.51.0,@aws-cdk/aws-ecs-patterns=1.51.0,@aws-cdk/aws-efs=1.51.0,@aws-cdk/aws-elasticache=1.51.0,@aws-cdk/aws-elasticloadbalancing=1.51.0,@aws-cdk/aws-elasticloadbalancingv2=1.51.0,@aws-cdk/aws-elasticsearch=1.51.0,@aws-cdk/aws-events=1.51.0,@aws-cdk/aws-events-targets=1.51.0,@aws-cdk/aws-iam=1.51.0,@aws-cdk/aws-kinesis=1.51.0,@aws-cdk/aws-kms=1.51.0,@aws-cdk/aws-lambda=1.51.0,@aws-cdk/aws-logs=1.51.0,@aws-cdk/aws-rds=1.51.0,@aws-cdk/aws-route53=1.51.0,@aws-cdk/aws-route53-targets=1.51.0,@aws-cdk/aws-s3=1.51.0,@aws-cdk/aws-s3-assets=1.51.0,@aws-cdk/aws-sam=1.51.0,@aws-cdk/aws-secretsmanager=1.51.0,@aws-cdk/aws-servicediscovery=1.51.0,@aws-cdk/aws-sns=1.51.0,@aws-cdk/aws-sns-subscriptions=1.51.0,@aws-cdk/aws-sqs=1.51.0,@aws-cdk/aws-ssm=1.51.0,@aws-cdk/aws-stepfunctions=1.51.0,@aws-cdk/aws-wafv2=1.51.0,@aws-cdk/cloud-assembly-schema=1.51.0,@aws-cdk/core=1.51.0,@aws-cdk/custom-resources=1.51.0,@aws-cdk/cx-api=1.51.0,@aws-cdk/region-info=1.51.0,jsii-runtime=Python/3.8.10"
+      },
+      "Condition": "CDKMetadataAvailable"
+    }
+  },
+  "Outputs": {
+    "VPCoutput": {
+      "Value": {
+        "Ref": "devVPC524BF54C"
+      },
+      "Export": {
+        "Name": "CustomerVPCID"
+      }
+    },
+    "VPCoutputprivatenets1": {
+      "Value": {
+        "Ref": "devVPCPrivateSubnet1Subnet712E0217"
+      },
+      "Export": {
+        "Name": "CustomerVPCPrivatesubnetID1"
+      }
+    },
+    "VPCoutputprivatenets2": {
+      "Value": {
+        "Ref": "devVPCPrivateSubnet2SubnetAA0D521D"
+      },
+      "Export": {
+        "Name": "CustomerVPCPrivatesubnetID2"
+      }
+    },
+    "VPCoutputpublicnets1": {
+      "Value": {
+        "Ref": "devVPCPublicSubnet1Subnet2E5540AB"
+      },
+      "Export": {
+        "Name": "CustomerVPCPublicsubnetID1"
+      }
+    },
+    "VPCoutputpublicnets2": {
+      "Value": {
+        "Ref": "devVPCPublicSubnet2Subnet2C6C27AC"
+      },
+      "Export": {
+        "Name": "CustomerVPCPublicsubnetID2"
+      }
+    },
+    "ExportsOutputRefdevVPC524BF54C27F5E3C9": {
+      "Value": {
+        "Ref": "devVPC524BF54C"
+      },
+      "Export": {
+        "Name": "vpc:ExportsOutputRefdevVPC524BF54C27F5E3C9"
+      }
+    },
+    "ExportsOutputRefdevVPCPublicSubnet1Subnet2E5540ABA39DCC67": {
+      "Value": {
+        "Ref": "devVPCPublicSubnet1Subnet2E5540AB"
+      },
+      "Export": {
+        "Name": "vpc:ExportsOutputRefdevVPCPublicSubnet1Subnet2E5540ABA39DCC67"
+      }
+    },
+    "ExportsOutputRefdevVPCPublicSubnet2Subnet2C6C27ACD536E4EE": {
+      "Value": {
+        "Ref": "devVPCPublicSubnet2Subnet2C6C27AC"
+      },
+      "Export": {
+        "Name": "vpc:ExportsOutputRefdevVPCPublicSubnet2Subnet2C6C27ACD536E4EE"
+      }
+    },
+    "ExportsOutputRefdevVPCPrivateSubnet1Subnet712E02178AFD203D": {
+      "Value": {
+        "Ref": "devVPCPrivateSubnet1Subnet712E0217"
+      },
+      "Export": {
+        "Name": "vpc:ExportsOutputRefdevVPCPrivateSubnet1Subnet712E02178AFD203D"
+      }
+    },
+    "ExportsOutputRefdevVPCPrivateSubnet2SubnetAA0D521D667E9B43": {
+      "Value": {
+        "Ref": "devVPCPrivateSubnet2SubnetAA0D521D"
+      },
+      "Export": {
+        "Name": "vpc:ExportsOutputRefdevVPCPrivateSubnet2SubnetAA0D521D667E9B43"
+      }
+    },
+    "ExportsOutputRefdevVPCIsolatedSubnet1Subnet1A2735F39EC62CD1": {
+      "Value": {
+        "Ref": "devVPCIsolatedSubnet1Subnet1A2735F3"
+      },
+      "Export": {
+        "Name": "vpc:ExportsOutputRefdevVPCIsolatedSubnet1Subnet1A2735F39EC62CD1"
+      }
+    },
+    "ExportsOutputRefdevVPCIsolatedSubnet2SubnetD2338F17278A6A7F": {
+      "Value": {
+        "Ref": "devVPCIsolatedSubnet2SubnetD2338F17"
+      },
+      "Export": {
+        "Name": "vpc:ExportsOutputRefdevVPCIsolatedSubnet2SubnetD2338F17278A6A7F"
+      }
+    }
+  },
+  "Conditions": {
+    "CDKMetadataAvailable": {
+      "Fn::Or": [
+        {
+          "Fn::Or": [
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "ap-east-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "ap-northeast-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "ap-northeast-2"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "ap-south-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "ap-southeast-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "ap-southeast-2"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "ca-central-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "cn-north-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "cn-northwest-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "eu-central-1"
+              ]
+            }
+          ]
+        },
+        {
+          "Fn::Or": [
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "eu-north-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "eu-west-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "eu-west-2"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "eu-west-3"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "me-south-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "sa-east-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "us-east-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "us-east-2"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "us-west-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "us-west-2"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

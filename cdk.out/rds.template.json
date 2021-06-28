@@ -1,0 +1,384 @@
+{
+  "Resources": {
+    "dbsecretF8F18970": {
+      "Type": "AWS::SecretsManager::Secret",
+      "Properties": {
+        "GenerateSecretString": {
+          "ExcludePunctuation": true,
+          "GenerateStringKey": "password",
+          "IncludeSpace": false,
+          "PasswordLength": 12,
+          "SecretStringTemplate": "{\"username\": \"admin\"}"
+        },
+        "Name": "dev/rds-secret"
+      },
+      "Metadata": {
+        "aws:cdk:path": "rds/db-secret/Resource"
+      }
+    },
+    "mysqlSubnets8BA5C110": {
+      "Type": "AWS::RDS::DBSubnetGroup",
+      "Properties": {
+        "DBSubnetGroupDescription": "Subnets for mysql database",
+        "SubnetIds": [
+          {
+            "Fn::ImportValue": "vpc:ExportsOutputRefdevVPCIsolatedSubnet1Subnet1A2735F39EC62CD1"
+          },
+          {
+            "Fn::ImportValue": "vpc:ExportsOutputRefdevVPCIsolatedSubnet2SubnetD2338F17278A6A7F"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "rds/mysql/Subnets"
+      }
+    },
+    "mysqlSecurityGroup65A9C338": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "RDS security group",
+        "SecurityGroupEgress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Allow all outbound traffic by default",
+            "IpProtocol": "-1"
+          }
+        ],
+        "VpcId": {
+          "Fn::ImportValue": "vpc:ExportsOutputRefdevVPC524BF54C27F5E3C9"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "rds/mysql/SecurityGroup/Resource"
+      }
+    },
+    "mysqlSecurityGroupfromsecuritystacklambdasgF241D9AEIndirectPortB970D818": {
+      "Type": "AWS::EC2::SecurityGroupIngress",
+      "Properties": {
+        "IpProtocol": "tcp",
+        "Description": "Access from Lambda functions",
+        "FromPort": {
+          "Fn::GetAtt": [
+            "mysql5168B53F",
+            "Endpoint.Port"
+          ]
+        },
+        "GroupId": {
+          "Fn::GetAtt": [
+            "mysqlSecurityGroup65A9C338",
+            "GroupId"
+          ]
+        },
+        "SourceSecurityGroupId": {
+          "Fn::ImportValue": "security-stack:ExportsOutputFnGetAttlambdasg77597EA8GroupIdF08ADB40"
+        },
+        "ToPort": {
+          "Fn::GetAtt": [
+            "mysql5168B53F",
+            "Endpoint.Port"
+          ]
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "rds/mysql/SecurityGroup/from securitystacklambdasgF241D9AE:{IndirectPort}"
+      }
+    },
+    "mysqlSecurityGroupfromsecuritystackbastionsg905E81FDIndirectPortB1B7BA6E": {
+      "Type": "AWS::EC2::SecurityGroupIngress",
+      "Properties": {
+        "IpProtocol": "tcp",
+        "Description": "Allow from bastion host",
+        "FromPort": {
+          "Fn::GetAtt": [
+            "mysql5168B53F",
+            "Endpoint.Port"
+          ]
+        },
+        "GroupId": {
+          "Fn::GetAtt": [
+            "mysqlSecurityGroup65A9C338",
+            "GroupId"
+          ]
+        },
+        "SourceSecurityGroupId": {
+          "Fn::ImportValue": "security-stack:ExportsOutputFnGetAttbastionsg1FA4DDAFGroupId8A31197D"
+        },
+        "ToPort": {
+          "Fn::GetAtt": [
+            "mysql5168B53F",
+            "Endpoint.Port"
+          ]
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "rds/mysql/SecurityGroup/from securitystackbastionsg905E81FD:{IndirectPort}"
+      }
+    },
+    "mysql5168B53F": {
+      "Type": "AWS::RDS::DBCluster",
+      "Properties": {
+        "Engine": "aurora-mysql",
+        "DatabaseName": "serverlessdev",
+        "DBClusterParameterGroupName": "default.aurora-mysql5.7",
+        "DBSubnetGroupName": {
+          "Ref": "mysqlSubnets8BA5C110"
+        },
+        "EngineVersion": "5.7.12",
+        "MasterUsername": "admin",
+        "MasterUserPassword": {
+          "Fn::Join": [
+            "",
+            [
+              "{{resolve:secretsmanager:",
+              {
+                "Ref": "dbsecretF8F18970"
+              },
+              ":SecretString:password::}}"
+            ]
+          ]
+        },
+        "VpcSecurityGroupIds": [
+          {
+            "Fn::GetAtt": [
+              "mysqlSecurityGroup65A9C338",
+              "GroupId"
+            ]
+          }
+        ]
+      },
+      "UpdateReplacePolicy": "Delete",
+      "DeletionPolicy": "Delete",
+      "Metadata": {
+        "aws:cdk:path": "rds/mysql/Resource"
+      }
+    },
+    "mysqlInstance164D18896": {
+      "Type": "AWS::RDS::DBInstance",
+      "Properties": {
+        "DBInstanceClass": "db.t3.small",
+        "DBClusterIdentifier": {
+          "Ref": "mysql5168B53F"
+        },
+        "DBSubnetGroupName": {
+          "Ref": "mysqlSubnets8BA5C110"
+        },
+        "Engine": "aurora-mysql",
+        "EngineVersion": "5.7.12",
+        "PubliclyAccessible": false
+      },
+      "UpdateReplacePolicy": "Delete",
+      "DeletionPolicy": "Delete",
+      "Metadata": {
+        "aws:cdk:path": "rds/mysql/Instance1"
+      }
+    },
+    "dbhostA482D535": {
+      "Type": "AWS::SSM::Parameter",
+      "Properties": {
+        "Type": "String",
+        "Value": {
+          "Fn::GetAtt": [
+            "mysql5168B53F",
+            "Endpoint.Address"
+          ]
+        },
+        "Name": "/dev/db-host"
+      },
+      "Metadata": {
+        "aws:cdk:path": "rds/db-host/Resource"
+      }
+    },
+    "dbnameD6A0A138": {
+      "Type": "AWS::SSM::Parameter",
+      "Properties": {
+        "Type": "String",
+        "Value": "serverlessdev",
+        "Name": "/dev/db-name"
+      },
+      "Metadata": {
+        "aws:cdk:path": "rds/db-name/Resource"
+      }
+    },
+    "CDKMetadata": {
+      "Type": "AWS::CDK::Metadata",
+      "Properties": {
+        "Modules": "aws-cdk=1.71.0,@aws-cdk/assets=1.51.0,@aws-cdk/aws-apigateway=1.51.0,@aws-cdk/aws-applicationautoscaling=1.51.0,@aws-cdk/aws-autoscaling=1.51.0,@aws-cdk/aws-autoscaling-common=1.51.0,@aws-cdk/aws-autoscaling-hooktargets=1.51.0,@aws-cdk/aws-batch=1.51.0,@aws-cdk/aws-certificatemanager=1.51.0,@aws-cdk/aws-cloudformation=1.51.0,@aws-cdk/aws-cloudfront=1.51.0,@aws-cdk/aws-cloudtrail=1.51.0,@aws-cdk/aws-cloudwatch=1.51.0,@aws-cdk/aws-codebuild=1.51.0,@aws-cdk/aws-codecommit=1.51.0,@aws-cdk/aws-codedeploy=1.51.0,@aws-cdk/aws-codepipeline=1.51.0,@aws-cdk/aws-codepipeline-actions=1.51.0,@aws-cdk/aws-cognito=1.51.0,@aws-cdk/aws-ec2=1.51.0,@aws-cdk/aws-ecr=1.51.0,@aws-cdk/aws-ecr-assets=1.51.0,@aws-cdk/aws-ecs=1.51.0,@aws-cdk/aws-ecs-patterns=1.51.0,@aws-cdk/aws-efs=1.51.0,@aws-cdk/aws-elasticache=1.51.0,@aws-cdk/aws-elasticloadbalancing=1.51.0,@aws-cdk/aws-elasticloadbalancingv2=1.51.0,@aws-cdk/aws-elasticsearch=1.51.0,@aws-cdk/aws-events=1.51.0,@aws-cdk/aws-events-targets=1.51.0,@aws-cdk/aws-iam=1.51.0,@aws-cdk/aws-kinesis=1.51.0,@aws-cdk/aws-kms=1.51.0,@aws-cdk/aws-lambda=1.51.0,@aws-cdk/aws-logs=1.51.0,@aws-cdk/aws-rds=1.51.0,@aws-cdk/aws-route53=1.51.0,@aws-cdk/aws-route53-targets=1.51.0,@aws-cdk/aws-s3=1.51.0,@aws-cdk/aws-s3-assets=1.51.0,@aws-cdk/aws-sam=1.51.0,@aws-cdk/aws-secretsmanager=1.51.0,@aws-cdk/aws-servicediscovery=1.51.0,@aws-cdk/aws-sns=1.51.0,@aws-cdk/aws-sns-subscriptions=1.51.0,@aws-cdk/aws-sqs=1.51.0,@aws-cdk/aws-ssm=1.51.0,@aws-cdk/aws-stepfunctions=1.51.0,@aws-cdk/aws-wafv2=1.51.0,@aws-cdk/cloud-assembly-schema=1.51.0,@aws-cdk/core=1.51.0,@aws-cdk/custom-resources=1.51.0,@aws-cdk/cx-api=1.51.0,@aws-cdk/region-info=1.51.0,jsii-runtime=Python/3.8.10"
+      },
+      "Condition": "CDKMetadataAvailable"
+    }
+  },
+  "Conditions": {
+    "CDKMetadataAvailable": {
+      "Fn::Or": [
+        {
+          "Fn::Or": [
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "ap-east-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "ap-northeast-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "ap-northeast-2"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "ap-south-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "ap-southeast-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "ap-southeast-2"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "ca-central-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "cn-north-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "cn-northwest-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "eu-central-1"
+              ]
+            }
+          ]
+        },
+        {
+          "Fn::Or": [
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "eu-north-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "eu-west-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "eu-west-2"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "eu-west-3"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "me-south-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "sa-east-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "us-east-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "us-east-2"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "us-west-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "us-west-2"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

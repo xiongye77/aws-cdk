@@ -1,0 +1,532 @@
+{
+  "Resources": {
+    "myAlbIdF3EF6ABD": {
+      "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+      "Properties": {
+        "Name": "WebServerAlb",
+        "Scheme": "internet-facing",
+        "SecurityGroups": [
+          {
+            "Fn::GetAtt": [
+              "myAlbIdSecurityGroup6428301A",
+              "GroupId"
+            ]
+          }
+        ],
+        "Subnets": [
+          {
+            "Fn::ImportValue": "vpc:ExportsOutputRefdevVPCPublicSubnet1Subnet2E5540ABA39DCC67"
+          },
+          {
+            "Fn::ImportValue": "vpc:ExportsOutputRefdevVPCPublicSubnet2Subnet2C6C27ACD536E4EE"
+          }
+        ],
+        "Type": "application"
+      },
+      "Metadata": {
+        "aws:cdk:path": "ec2/myAlbId/Resource"
+      }
+    },
+    "myAlbIdSecurityGroup6428301A": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Automatically created Security Group for ELB ec2myAlbIdD680A2AE",
+        "SecurityGroupIngress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Allow Internet access on ALB Port 80",
+            "FromPort": 80,
+            "IpProtocol": "tcp",
+            "ToPort": 80
+          }
+        ],
+        "VpcId": {
+          "Fn::ImportValue": "vpc:ExportsOutputRefdevVPC524BF54C27F5E3C9"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "ec2/myAlbId/SecurityGroup/Resource"
+      }
+    },
+    "myAlbIdSecurityGrouptoec2webServerAsgIdInstanceSecurityGroupD966520880817FC5EB": {
+      "Type": "AWS::EC2::SecurityGroupEgress",
+      "Properties": {
+        "GroupId": {
+          "Fn::GetAtt": [
+            "myAlbIdSecurityGroup6428301A",
+            "GroupId"
+          ]
+        },
+        "IpProtocol": "tcp",
+        "Description": "Allows ASG Security Group receive traffic from ALB",
+        "DestinationSecurityGroupId": {
+          "Fn::GetAtt": [
+            "webServerAsgIdInstanceSecurityGroup91DE0BE3",
+            "GroupId"
+          ]
+        },
+        "FromPort": 80,
+        "ToPort": 80
+      },
+      "Metadata": {
+        "aws:cdk:path": "ec2/myAlbId/SecurityGroup/to ec2webServerAsgIdInstanceSecurityGroupD9665208:80"
+      }
+    },
+    "myAlbIdlisternerId2CD6FC0A": {
+      "Type": "AWS::ElasticLoadBalancingV2::Listener",
+      "Properties": {
+        "DefaultActions": [
+          {
+            "TargetGroupArn": {
+              "Ref": "myAlbIdlisternerIdlistenerIdGroup80F930FC"
+            },
+            "Type": "forward"
+          }
+        ],
+        "LoadBalancerArn": {
+          "Ref": "myAlbIdF3EF6ABD"
+        },
+        "Port": 80,
+        "Protocol": "HTTP"
+      },
+      "Metadata": {
+        "aws:cdk:path": "ec2/myAlbId/listernerId/Resource"
+      }
+    },
+    "myAlbIdlisternerIdlistenerIdGroup80F930FC": {
+      "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+      "Properties": {
+        "Port": 80,
+        "Protocol": "HTTP",
+        "TargetType": "instance",
+        "VpcId": {
+          "Fn::ImportValue": "vpc:ExportsOutputRefdevVPC524BF54C27F5E3C9"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "ec2/myAlbId/listernerId/listenerIdGroup/Resource"
+      }
+    },
+    "webServerRoleId125658B3": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "ec2.",
+                      {
+                        "Ref": "AWS::URLSuffix"
+                      }
+                    ]
+                  ]
+                }
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/AmazonSSMManagedInstanceCore"
+              ]
+            ]
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/AmazonS3ReadOnlyAccess"
+              ]
+            ]
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "ec2/webServerRoleId/Resource"
+      }
+    },
+    "webServerAsgIdInstanceSecurityGroup91DE0BE3": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "ec2/webServerAsgId/InstanceSecurityGroup",
+        "SecurityGroupEgress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Allow all outbound traffic by default",
+            "IpProtocol": "-1"
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "ec2/webServerAsgId"
+          }
+        ],
+        "VpcId": {
+          "Fn::ImportValue": "vpc:ExportsOutputRefdevVPC524BF54C27F5E3C9"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "ec2/webServerAsgId/InstanceSecurityGroup/Resource"
+      }
+    },
+    "webServerAsgIdInstanceSecurityGroupfromec2myAlbIdSecurityGroup8B1A388080BA278926": {
+      "Type": "AWS::EC2::SecurityGroupIngress",
+      "Properties": {
+        "IpProtocol": "tcp",
+        "Description": "Allows ASG Security Group receive traffic from ALB",
+        "FromPort": 80,
+        "GroupId": {
+          "Fn::GetAtt": [
+            "webServerAsgIdInstanceSecurityGroup91DE0BE3",
+            "GroupId"
+          ]
+        },
+        "SourceSecurityGroupId": {
+          "Fn::GetAtt": [
+            "myAlbIdSecurityGroup6428301A",
+            "GroupId"
+          ]
+        },
+        "ToPort": 80
+      },
+      "Metadata": {
+        "aws:cdk:path": "ec2/webServerAsgId/InstanceSecurityGroup/from ec2myAlbIdSecurityGroup8B1A3880:80"
+      }
+    },
+    "webServerAsgIdInstanceProfileF79FE114": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "Roles": [
+          {
+            "Ref": "webServerRoleId125658B3"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "ec2/webServerAsgId/InstanceProfile"
+      }
+    },
+    "webServerAsgIdLaunchConfig91E1AEAF": {
+      "Type": "AWS::AutoScaling::LaunchConfiguration",
+      "Properties": {
+        "ImageId": {
+          "Ref": "SsmParameterValueawsserviceamiamazonlinuxlatestamzn2amihvmx8664gp2C96584B6F00A464EAD1953AFF4B05118Parameter"
+        },
+        "InstanceType": "t2.micro",
+        "IamInstanceProfile": {
+          "Ref": "webServerAsgIdInstanceProfileF79FE114"
+        },
+        "SecurityGroups": [
+          {
+            "Fn::GetAtt": [
+              "webServerAsgIdInstanceSecurityGroup91DE0BE3",
+              "GroupId"
+            ]
+          }
+        ],
+        "UserData": {
+          "Fn::Base64": "\n#!/bin/bash -xe\n\n# Lets log everything to console for being lazy (not recommended)\n# exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1\n\nsudo yum install -y httpd\nIP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)\necho \"<html><head><title>Modern Web App</title><style>body {margin-top: 40px;background-color: #333;}</style></head><body><div style=color:white;text-align:center><h1 style='font-size:7vw;'>Modern Web App</h1><p>Congratulations! Your Web Server is Online.</p><small>Pages served from $IP</small></div></body></html>\" >> /var/www/html/index.html\nsudo chkconfig httpd on\nsudo service httpd start\n"
+        }
+      },
+      "DependsOn": [
+        "webServerRoleId125658B3"
+      ],
+      "Metadata": {
+        "aws:cdk:path": "ec2/webServerAsgId/LaunchConfig"
+      }
+    },
+    "webServerAsgIdASG99833027": {
+      "Type": "AWS::AutoScaling::AutoScalingGroup",
+      "Properties": {
+        "MaxSize": "2",
+        "MinSize": "2",
+        "LaunchConfigurationName": {
+          "Ref": "webServerAsgIdLaunchConfig91E1AEAF"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "PropagateAtLaunch": true,
+            "Value": "ec2/webServerAsgId"
+          }
+        ],
+        "TargetGroupARNs": [
+          {
+            "Ref": "myAlbIdlisternerIdlistenerIdGroup80F930FC"
+          }
+        ],
+        "VPCZoneIdentifier": [
+          {
+            "Fn::ImportValue": "vpc:ExportsOutputRefdevVPCPrivateSubnet1Subnet712E02178AFD203D"
+          },
+          {
+            "Fn::ImportValue": "vpc:ExportsOutputRefdevVPCPrivateSubnet2SubnetAA0D521D667E9B43"
+          }
+        ]
+      },
+      "UpdatePolicy": {
+        "AutoScalingScheduledAction": {
+          "IgnoreUnmodifiedGroupSizeProperties": true
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "ec2/webServerAsgId/ASG"
+      }
+    },
+    "CDKMetadata": {
+      "Type": "AWS::CDK::Metadata",
+      "Properties": {
+        "Modules": "aws-cdk=1.71.0,@aws-cdk/assets=1.51.0,@aws-cdk/aws-apigateway=1.51.0,@aws-cdk/aws-applicationautoscaling=1.51.0,@aws-cdk/aws-autoscaling=1.51.0,@aws-cdk/aws-autoscaling-common=1.51.0,@aws-cdk/aws-autoscaling-hooktargets=1.51.0,@aws-cdk/aws-batch=1.51.0,@aws-cdk/aws-certificatemanager=1.51.0,@aws-cdk/aws-cloudformation=1.51.0,@aws-cdk/aws-cloudfront=1.51.0,@aws-cdk/aws-cloudtrail=1.51.0,@aws-cdk/aws-cloudwatch=1.51.0,@aws-cdk/aws-codebuild=1.51.0,@aws-cdk/aws-codecommit=1.51.0,@aws-cdk/aws-codedeploy=1.51.0,@aws-cdk/aws-codepipeline=1.51.0,@aws-cdk/aws-codepipeline-actions=1.51.0,@aws-cdk/aws-cognito=1.51.0,@aws-cdk/aws-ec2=1.51.0,@aws-cdk/aws-ecr=1.51.0,@aws-cdk/aws-ecr-assets=1.51.0,@aws-cdk/aws-ecs=1.51.0,@aws-cdk/aws-ecs-patterns=1.51.0,@aws-cdk/aws-efs=1.51.0,@aws-cdk/aws-elasticache=1.51.0,@aws-cdk/aws-elasticloadbalancing=1.51.0,@aws-cdk/aws-elasticloadbalancingv2=1.51.0,@aws-cdk/aws-elasticsearch=1.51.0,@aws-cdk/aws-events=1.51.0,@aws-cdk/aws-events-targets=1.51.0,@aws-cdk/aws-iam=1.51.0,@aws-cdk/aws-kinesis=1.51.0,@aws-cdk/aws-kms=1.51.0,@aws-cdk/aws-lambda=1.51.0,@aws-cdk/aws-logs=1.51.0,@aws-cdk/aws-rds=1.51.0,@aws-cdk/aws-route53=1.51.0,@aws-cdk/aws-route53-targets=1.51.0,@aws-cdk/aws-s3=1.51.0,@aws-cdk/aws-s3-assets=1.51.0,@aws-cdk/aws-sam=1.51.0,@aws-cdk/aws-secretsmanager=1.51.0,@aws-cdk/aws-servicediscovery=1.51.0,@aws-cdk/aws-sns=1.51.0,@aws-cdk/aws-sns-subscriptions=1.51.0,@aws-cdk/aws-sqs=1.51.0,@aws-cdk/aws-ssm=1.51.0,@aws-cdk/aws-stepfunctions=1.51.0,@aws-cdk/aws-wafv2=1.51.0,@aws-cdk/cloud-assembly-schema=1.51.0,@aws-cdk/core=1.51.0,@aws-cdk/custom-resources=1.51.0,@aws-cdk/cx-api=1.51.0,@aws-cdk/region-info=1.51.0,jsii-runtime=Python/3.8.10"
+      },
+      "Condition": "CDKMetadataAvailable"
+    }
+  },
+  "Parameters": {
+    "SsmParameterValueawsserviceamiamazonlinuxlatestamzn2amihvmx8664gp2C96584B6F00A464EAD1953AFF4B05118Parameter": {
+      "Type": "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>",
+      "Default": "/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2"
+    }
+  },
+  "Outputs": {
+    "albDomainName": {
+      "Description": "Web Server ALB Domain Name",
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "http://",
+            {
+              "Fn::GetAtt": [
+                "myAlbIdF3EF6ABD",
+                "DNSName"
+              ]
+            }
+          ]
+        ]
+      }
+    },
+    "ALBname": {
+      "Description": "Web Server ALB Domain Name",
+      "Value": {
+        "Fn::GetAtt": [
+          "myAlbIdF3EF6ABD",
+          "DNSName"
+        ]
+      },
+      "Export": {
+        "Name": "ALB-name"
+      }
+    },
+    "ALBARN": {
+      "Description": "Web Server ALB ARN",
+      "Value": {
+        "Ref": "myAlbIdF3EF6ABD"
+      },
+      "Export": {
+        "Name": "ALB-ARN"
+      }
+    },
+    "ALBListenerARN": {
+      "Description": "ALB-Listener-ARN",
+      "Value": {
+        "Ref": "myAlbIdlisternerId2CD6FC0A"
+      },
+      "Export": {
+        "Name": "ALB-Listener-ARN"
+      }
+    }
+  },
+  "Conditions": {
+    "CDKMetadataAvailable": {
+      "Fn::Or": [
+        {
+          "Fn::Or": [
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "ap-east-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "ap-northeast-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "ap-northeast-2"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "ap-south-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "ap-southeast-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "ap-southeast-2"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "ca-central-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "cn-north-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "cn-northwest-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "eu-central-1"
+              ]
+            }
+          ]
+        },
+        {
+          "Fn::Or": [
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "eu-north-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "eu-west-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "eu-west-2"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "eu-west-3"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "me-south-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "sa-east-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "us-east-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "us-east-2"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "us-west-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "us-west-2"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
