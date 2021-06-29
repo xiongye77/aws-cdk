@@ -19,12 +19,16 @@ class ACMStack(core.Stack):
 
         dns_zone = r53.HostedZone.from_hosted_zone_attributes(self, 'hosted-zone',
             hosted_zone_id=zone_id.string_value,
-            zone_name='cloudevangelist.ca'
+            zone_name='aconex.design'
         )
 
         self.cert_manager = acm.DnsValidatedCertificate(self, 'acm-id',
             hosted_zone=dns_zone,
-            domain_name='cloudevangelist.ca',
-            subject_alternative_names=['*.cloudevangelist.ca']
+            domain_name='aconex.design',
+            subject_alternative_names=['*.aconex.design']
+        )
+        ssm.StringParameter(self,'acm-arn',
+            parameter_name='/'+env_name+'/acm-arn',
+            string_value=self.cert_manager.certificate_arn
         )
         

@@ -1310,6 +1310,13 @@
                             "fromPort": 80,
                             "toPort": 80,
                             "description": "Allow Internet access on ALB Port 80"
+                          },
+                          {
+                            "cidrIp": "0.0.0.0/0",
+                            "ipProtocol": "tcp",
+                            "fromPort": 443,
+                            "toPort": 443,
+                            "description": "Allow from anyone on port 443"
                           }
                         ],
                         "vpcId": {
@@ -1342,6 +1349,56 @@
                         "toPort": 80
                       }
                     }
+                  },
+                  "to ec2webServiceClustermicroServiceAutoScalingGroupInstanceSecurityGroup3AC0EDFD:32768-65535": {
+                    "id": "to ec2webServiceClustermicroServiceAutoScalingGroupInstanceSecurityGroup3AC0EDFD:32768-65535",
+                    "path": "ec2/myAlbId/SecurityGroup/to ec2webServiceClustermicroServiceAutoScalingGroupInstanceSecurityGroup3AC0EDFD:32768-65535",
+                    "attributes": {
+                      "aws:cdk:cloudformation:type": "AWS::EC2::SecurityGroupEgress",
+                      "aws:cdk:cloudformation:props": {
+                        "groupId": {
+                          "Fn::GetAtt": [
+                            "myAlbIdSecurityGroup6428301A",
+                            "GroupId"
+                          ]
+                        },
+                        "ipProtocol": "tcp",
+                        "description": "Load balancer to target",
+                        "destinationSecurityGroupId": {
+                          "Fn::GetAtt": [
+                            "webServiceClustermicroServiceAutoScalingGroupInstanceSecurityGroup7142E704",
+                            "GroupId"
+                          ]
+                        },
+                        "fromPort": 32768,
+                        "toPort": 65535
+                      }
+                    }
+                  },
+                  "to ec2ASGInstanceSecurityGroupC5AD32D2:32768-65535": {
+                    "id": "to ec2ASGInstanceSecurityGroupC5AD32D2:32768-65535",
+                    "path": "ec2/myAlbId/SecurityGroup/to ec2ASGInstanceSecurityGroupC5AD32D2:32768-65535",
+                    "attributes": {
+                      "aws:cdk:cloudformation:type": "AWS::EC2::SecurityGroupEgress",
+                      "aws:cdk:cloudformation:props": {
+                        "groupId": {
+                          "Fn::GetAtt": [
+                            "myAlbIdSecurityGroup6428301A",
+                            "GroupId"
+                          ]
+                        },
+                        "ipProtocol": "tcp",
+                        "description": "Load balancer to target",
+                        "destinationSecurityGroupId": {
+                          "Fn::GetAtt": [
+                            "ASGInstanceSecurityGroup0525485D",
+                            "GroupId"
+                          ]
+                        },
+                        "fromPort": 32768,
+                        "toPort": 65535
+                      }
+                    }
                   }
                 }
               },
@@ -1357,9 +1414,11 @@
                       "aws:cdk:cloudformation:props": {
                         "defaultActions": [
                           {
-                            "type": "forward",
-                            "targetGroupArn": {
-                              "Ref": "myAlbIdlisternerIdlistenerIdGroup80F930FC"
+                            "type": "redirect",
+                            "redirectConfig": {
+                              "statusCode": "HTTP_301",
+                              "port": "443",
+                              "protocol": "HTTPS"
                             }
                           }
                         ],
@@ -1389,6 +1448,62 @@
                             }
                           }
                         }
+                      }
+                    }
+                  },
+                  "ECS1Group": {
+                    "id": "ECS1Group",
+                    "path": "ec2/myAlbId/listernerId/ECS1Group",
+                    "children": {
+                      "Resource": {
+                        "id": "Resource",
+                        "path": "ec2/myAlbId/listernerId/ECS1Group/Resource",
+                        "attributes": {
+                          "aws:cdk:cloudformation:type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+                          "aws:cdk:cloudformation:props": {
+                            "port": 80,
+                            "protocol": "HTTP",
+                            "targetType": "instance",
+                            "vpcId": {
+                              "Fn::ImportValue": "vpc:ExportsOutputRefdevVPC524BF54C27F5E3C9"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "https": {
+                "id": "https",
+                "path": "ec2/myAlbId/https",
+                "children": {
+                  "Resource": {
+                    "id": "Resource",
+                    "path": "ec2/myAlbId/https/Resource",
+                    "attributes": {
+                      "aws:cdk:cloudformation:type": "AWS::ElasticLoadBalancingV2::Listener",
+                      "aws:cdk:cloudformation:props": {
+                        "defaultActions": [
+                          {
+                            "type": "forward",
+                            "targetGroupArn": {
+                              "Ref": "myAlbIdlisternerIdECS1Group41A8899E"
+                            }
+                          }
+                        ],
+                        "loadBalancerArn": {
+                          "Ref": "myAlbIdF3EF6ABD"
+                        },
+                        "port": 443,
+                        "protocol": "HTTPS",
+                        "certificates": [
+                          {
+                            "certificateArn": {
+                              "Ref": "SsmParameterValuedevacmarnC96584B6F00A464EAD1953AFF4B05118Parameter"
+                            }
+                          }
+                        ]
                       }
                     }
                   }
@@ -1556,7 +1671,7 @@
                       }
                     ],
                     "userData": {
-                      "Fn::Base64": "\n#!/bin/bash -xe\n\n# Lets log everything to console for being lazy (not recommended)\n# exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1\n\nsudo yum install -y httpd\nIP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)\necho \"<html><head><title>Modern Web App</title><style>body {margin-top: 40px;background-color: #333;}</style></head><body><div style=color:white;text-align:center><h1 style='font-size:7vw;'>Modern Web App</h1><p>Congratulations! Your Web Server is Online.</p><small>Pages served from $IP</small></div></body></html>\" >> /var/www/html/index.html\nsudo chkconfig httpd on\nsudo service httpd start\n"
+                      "Fn::Base64": "\n#!/bin/bash -xe\n\n# Lets log everything to console for being lazy (not recommended)\n# exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1\n\nsudo yum install -y httpd\nIP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)\nsudo mkdir /var/www/html/api\necho \"<html><head><title>Modern Web App</title><style>body {margin-top: 40px;background-color: #333;}</style></head><body><div style=color:white;text-align:center><h1 style='font-size:7vw;'>Modern Web App</h1><p>Congratulations! Your Web Server is Online.</p><small>Pages served from $IP</small></div></body></html>\" >> /var/www/html/api/index.html\nsudo chkconfig httpd on\nsudo service httpd start\n"
                     }
                   }
                 }
@@ -1567,8 +1682,8 @@
                 "attributes": {
                   "aws:cdk:cloudformation:type": "AWS::AutoScaling::AutoScalingGroup",
                   "aws:cdk:cloudformation:props": {
-                    "maxSize": "2",
-                    "minSize": "2",
+                    "maxSize": "3",
+                    "minSize": "1",
                     "launchConfigurationName": {
                       "Ref": "webServerAsgIdLaunchConfig91E1AEAF"
                     },
@@ -1594,6 +1709,31 @@
                     ]
                   }
                 }
+              },
+              "ScalingPolicyKeepCpuHalfwayLoaded": {
+                "id": "ScalingPolicyKeepCpuHalfwayLoaded",
+                "path": "ec2/webServerAsgId/ScalingPolicyKeepCpuHalfwayLoaded",
+                "children": {
+                  "Resource": {
+                    "id": "Resource",
+                    "path": "ec2/webServerAsgId/ScalingPolicyKeepCpuHalfwayLoaded/Resource",
+                    "attributes": {
+                      "aws:cdk:cloudformation:type": "AWS::AutoScaling::ScalingPolicy",
+                      "aws:cdk:cloudformation:props": {
+                        "autoScalingGroupName": {
+                          "Ref": "webServerAsgIdASG99833027"
+                        },
+                        "policyType": "TargetTrackingScaling",
+                        "targetTrackingConfiguration": {
+                          "predefinedMetricSpecification": {
+                            "predefinedMetricType": "ASGAverageCPUUtilization"
+                          },
+                          "targetValue": 50
+                        }
+                      }
+                    }
+                  }
+                }
               }
             }
           },
@@ -1605,35 +1745,13 @@
             "id": "SsmParameterValue:--aws--service--ami-amazon-linux-latest--amzn2-ami-hvm-x86_64-gp2:C96584B6-F00A-464E-AD19-53AFF4B05118",
             "path": "ec2/SsmParameterValue:--aws--service--ami-amazon-linux-latest--amzn2-ami-hvm-x86_64-gp2:C96584B6-F00A-464E-AD19-53AFF4B05118"
           },
-          "albDomainName": {
-            "id": "albDomainName",
-            "path": "ec2/albDomainName"
-          },
-          "ALB-name": {
-            "id": "ALB-name",
-            "path": "ec2/ALB-name"
-          },
-          "ALB-ARN": {
-            "id": "ALB-ARN",
-            "path": "ec2/ALB-ARN"
-          },
-          "ALB-Listener-ARN": {
-            "id": "ALB-Listener-ARN",
-            "path": "ec2/ALB-Listener-ARN"
-          }
-        }
-      },
-      "ecs": {
-        "id": "ecs",
-        "path": "ecs",
-        "children": {
           "webServiceCluster": {
             "id": "webServiceCluster",
-            "path": "ecs/webServiceCluster",
+            "path": "ec2/webServiceCluster",
             "children": {
               "Resource": {
                 "id": "Resource",
-                "path": "ecs/webServiceCluster/Resource",
+                "path": "ec2/webServiceCluster/Resource",
                 "attributes": {
                   "aws:cdk:cloudformation:type": "AWS::ECS::Cluster",
                   "aws:cdk:cloudformation:props": {}
@@ -1641,19 +1759,19 @@
               },
               "microServiceAutoScalingGroup": {
                 "id": "microServiceAutoScalingGroup",
-                "path": "ecs/webServiceCluster/microServiceAutoScalingGroup",
+                "path": "ec2/webServiceCluster/microServiceAutoScalingGroup",
                 "children": {
                   "InstanceSecurityGroup": {
                     "id": "InstanceSecurityGroup",
-                    "path": "ecs/webServiceCluster/microServiceAutoScalingGroup/InstanceSecurityGroup",
+                    "path": "ec2/webServiceCluster/microServiceAutoScalingGroup/InstanceSecurityGroup",
                     "children": {
                       "Resource": {
                         "id": "Resource",
-                        "path": "ecs/webServiceCluster/microServiceAutoScalingGroup/InstanceSecurityGroup/Resource",
+                        "path": "ec2/webServiceCluster/microServiceAutoScalingGroup/InstanceSecurityGroup/Resource",
                         "attributes": {
                           "aws:cdk:cloudformation:type": "AWS::EC2::SecurityGroup",
                           "aws:cdk:cloudformation:props": {
-                            "groupDescription": "ecs/webServiceCluster/microServiceAutoScalingGroup/InstanceSecurityGroup",
+                            "groupDescription": "ec2/webServiceCluster/microServiceAutoScalingGroup/InstanceSecurityGroup",
                             "securityGroupEgress": [
                               {
                                 "cidrIp": "0.0.0.0/0",
@@ -1664,7 +1782,7 @@
                             "tags": [
                               {
                                 "key": "Name",
-                                "value": "ecs/webServiceCluster/microServiceAutoScalingGroup"
+                                "value": "ec2/webServiceCluster/microServiceAutoScalingGroup"
                               }
                             ],
                             "vpcId": {
@@ -1672,16 +1790,41 @@
                             }
                           }
                         }
+                      },
+                      "from ec2myAlbIdSecurityGroup8B1A3880:32768-65535": {
+                        "id": "from ec2myAlbIdSecurityGroup8B1A3880:32768-65535",
+                        "path": "ec2/webServiceCluster/microServiceAutoScalingGroup/InstanceSecurityGroup/from ec2myAlbIdSecurityGroup8B1A3880:32768-65535",
+                        "attributes": {
+                          "aws:cdk:cloudformation:type": "AWS::EC2::SecurityGroupIngress",
+                          "aws:cdk:cloudformation:props": {
+                            "ipProtocol": "tcp",
+                            "description": "Load balancer to target",
+                            "fromPort": 32768,
+                            "groupId": {
+                              "Fn::GetAtt": [
+                                "webServiceClustermicroServiceAutoScalingGroupInstanceSecurityGroup7142E704",
+                                "GroupId"
+                              ]
+                            },
+                            "sourceSecurityGroupId": {
+                              "Fn::GetAtt": [
+                                "myAlbIdSecurityGroup6428301A",
+                                "GroupId"
+                              ]
+                            },
+                            "toPort": 65535
+                          }
+                        }
                       }
                     }
                   },
                   "InstanceRole": {
                     "id": "InstanceRole",
-                    "path": "ecs/webServiceCluster/microServiceAutoScalingGroup/InstanceRole",
+                    "path": "ec2/webServiceCluster/microServiceAutoScalingGroup/InstanceRole",
                     "children": {
                       "Resource": {
                         "id": "Resource",
-                        "path": "ecs/webServiceCluster/microServiceAutoScalingGroup/InstanceRole/Resource",
+                        "path": "ec2/webServiceCluster/microServiceAutoScalingGroup/InstanceRole/Resource",
                         "attributes": {
                           "aws:cdk:cloudformation:type": "AWS::IAM::Role",
                           "aws:cdk:cloudformation:props": {
@@ -1710,7 +1853,7 @@
                             "tags": [
                               {
                                 "key": "Name",
-                                "value": "ecs/webServiceCluster/microServiceAutoScalingGroup"
+                                "value": "ec2/webServiceCluster/microServiceAutoScalingGroup"
                               }
                             ]
                           }
@@ -1718,11 +1861,11 @@
                       },
                       "DefaultPolicy": {
                         "id": "DefaultPolicy",
-                        "path": "ecs/webServiceCluster/microServiceAutoScalingGroup/InstanceRole/DefaultPolicy",
+                        "path": "ec2/webServiceCluster/microServiceAutoScalingGroup/InstanceRole/DefaultPolicy",
                         "children": {
                           "Resource": {
                             "id": "Resource",
-                            "path": "ecs/webServiceCluster/microServiceAutoScalingGroup/InstanceRole/DefaultPolicy/Resource",
+                            "path": "ec2/webServiceCluster/microServiceAutoScalingGroup/InstanceRole/DefaultPolicy/Resource",
                             "attributes": {
                               "aws:cdk:cloudformation:type": "AWS::IAM::Policy",
                               "aws:cdk:cloudformation:props": {
@@ -1762,7 +1905,7 @@
                   },
                   "InstanceProfile": {
                     "id": "InstanceProfile",
-                    "path": "ecs/webServiceCluster/microServiceAutoScalingGroup/InstanceProfile",
+                    "path": "ec2/webServiceCluster/microServiceAutoScalingGroup/InstanceProfile",
                     "attributes": {
                       "aws:cdk:cloudformation:type": "AWS::IAM::InstanceProfile",
                       "aws:cdk:cloudformation:props": {
@@ -1776,7 +1919,7 @@
                   },
                   "LaunchConfig": {
                     "id": "LaunchConfig",
-                    "path": "ecs/webServiceCluster/microServiceAutoScalingGroup/LaunchConfig",
+                    "path": "ec2/webServiceCluster/microServiceAutoScalingGroup/LaunchConfig",
                     "attributes": {
                       "aws:cdk:cloudformation:type": "AWS::AutoScaling::LaunchConfiguration",
                       "aws:cdk:cloudformation:props": {
@@ -1814,7 +1957,7 @@
                   },
                   "ASG": {
                     "id": "ASG",
-                    "path": "ecs/webServiceCluster/microServiceAutoScalingGroup/ASG",
+                    "path": "ec2/webServiceCluster/microServiceAutoScalingGroup/ASG",
                     "attributes": {
                       "aws:cdk:cloudformation:type": "AWS::AutoScaling::AutoScalingGroup",
                       "aws:cdk:cloudformation:props": {
@@ -1826,7 +1969,7 @@
                         "tags": [
                           {
                             "key": "Name",
-                            "value": "ecs/webServiceCluster/microServiceAutoScalingGroup",
+                            "value": "ec2/webServiceCluster/microServiceAutoScalingGroup",
                             "propagateAtLaunch": true
                           }
                         ],
@@ -1843,19 +1986,19 @@
                   },
                   "DrainECSHook": {
                     "id": "DrainECSHook",
-                    "path": "ecs/webServiceCluster/microServiceAutoScalingGroup/DrainECSHook",
+                    "path": "ec2/webServiceCluster/microServiceAutoScalingGroup/DrainECSHook",
                     "children": {
                       "Function": {
                         "id": "Function",
-                        "path": "ecs/webServiceCluster/microServiceAutoScalingGroup/DrainECSHook/Function",
+                        "path": "ec2/webServiceCluster/microServiceAutoScalingGroup/DrainECSHook/Function",
                         "children": {
                           "ServiceRole": {
                             "id": "ServiceRole",
-                            "path": "ecs/webServiceCluster/microServiceAutoScalingGroup/DrainECSHook/Function/ServiceRole",
+                            "path": "ec2/webServiceCluster/microServiceAutoScalingGroup/DrainECSHook/Function/ServiceRole",
                             "children": {
                               "Resource": {
                                 "id": "Resource",
-                                "path": "ecs/webServiceCluster/microServiceAutoScalingGroup/DrainECSHook/Function/ServiceRole/Resource",
+                                "path": "ec2/webServiceCluster/microServiceAutoScalingGroup/DrainECSHook/Function/ServiceRole/Resource",
                                 "attributes": {
                                   "aws:cdk:cloudformation:type": "AWS::IAM::Role",
                                   "aws:cdk:cloudformation:props": {
@@ -1888,7 +2031,7 @@
                                     "tags": [
                                       {
                                         "key": "Name",
-                                        "value": "ecs/webServiceCluster/microServiceAutoScalingGroup"
+                                        "value": "ec2/webServiceCluster/microServiceAutoScalingGroup"
                                       }
                                     ]
                                   }
@@ -1896,11 +2039,11 @@
                               },
                               "DefaultPolicy": {
                                 "id": "DefaultPolicy",
-                                "path": "ecs/webServiceCluster/microServiceAutoScalingGroup/DrainECSHook/Function/ServiceRole/DefaultPolicy",
+                                "path": "ec2/webServiceCluster/microServiceAutoScalingGroup/DrainECSHook/Function/ServiceRole/DefaultPolicy",
                                 "children": {
                                   "Resource": {
                                     "id": "Resource",
-                                    "path": "ecs/webServiceCluster/microServiceAutoScalingGroup/DrainECSHook/Function/ServiceRole/DefaultPolicy/Resource",
+                                    "path": "ec2/webServiceCluster/microServiceAutoScalingGroup/DrainECSHook/Function/ServiceRole/DefaultPolicy/Resource",
                                     "attributes": {
                                       "aws:cdk:cloudformation:type": "AWS::IAM::Policy",
                                       "aws:cdk:cloudformation:props": {
@@ -2001,7 +2144,7 @@
                           },
                           "Resource": {
                             "id": "Resource",
-                            "path": "ecs/webServiceCluster/microServiceAutoScalingGroup/DrainECSHook/Function/Resource",
+                            "path": "ec2/webServiceCluster/microServiceAutoScalingGroup/DrainECSHook/Function/Resource",
                             "attributes": {
                               "aws:cdk:cloudformation:type": "AWS::Lambda::Function",
                               "aws:cdk:cloudformation:props": {
@@ -2026,16 +2169,16 @@
                                 "tags": [
                                   {
                                     "key": "Name",
-                                    "value": "ecs/webServiceCluster/microServiceAutoScalingGroup"
+                                    "value": "ec2/webServiceCluster/microServiceAutoScalingGroup"
                                   }
                                 ],
                                 "timeout": 310
                               }
                             }
                           },
-                          "AllowInvoke:ecswebServiceClustermicroServiceAutoScalingGroupLifecycleHookDrainHookTopicB18DD55C": {
-                            "id": "AllowInvoke:ecswebServiceClustermicroServiceAutoScalingGroupLifecycleHookDrainHookTopicB18DD55C",
-                            "path": "ecs/webServiceCluster/microServiceAutoScalingGroup/DrainECSHook/Function/AllowInvoke:ecswebServiceClustermicroServiceAutoScalingGroupLifecycleHookDrainHookTopicB18DD55C",
+                          "AllowInvoke:ec2webServiceClustermicroServiceAutoScalingGroupLifecycleHookDrainHookTopicB273F986": {
+                            "id": "AllowInvoke:ec2webServiceClustermicroServiceAutoScalingGroupLifecycleHookDrainHookTopicB273F986",
+                            "path": "ec2/webServiceCluster/microServiceAutoScalingGroup/DrainECSHook/Function/AllowInvoke:ec2webServiceClustermicroServiceAutoScalingGroupLifecycleHookDrainHookTopicB273F986",
                             "attributes": {
                               "aws:cdk:cloudformation:type": "AWS::Lambda::Permission",
                               "aws:cdk:cloudformation:props": {
@@ -2055,11 +2198,11 @@
                           },
                           "Topic": {
                             "id": "Topic",
-                            "path": "ecs/webServiceCluster/microServiceAutoScalingGroup/DrainECSHook/Function/Topic",
+                            "path": "ec2/webServiceCluster/microServiceAutoScalingGroup/DrainECSHook/Function/Topic",
                             "children": {
                               "Resource": {
                                 "id": "Resource",
-                                "path": "ecs/webServiceCluster/microServiceAutoScalingGroup/DrainECSHook/Function/Topic/Resource",
+                                "path": "ec2/webServiceCluster/microServiceAutoScalingGroup/DrainECSHook/Function/Topic/Resource",
                                 "attributes": {
                                   "aws:cdk:cloudformation:type": "AWS::SNS::Subscription",
                                   "aws:cdk:cloudformation:props": {
@@ -2084,15 +2227,15 @@
                   },
                   "LifecycleHookDrainHook": {
                     "id": "LifecycleHookDrainHook",
-                    "path": "ecs/webServiceCluster/microServiceAutoScalingGroup/LifecycleHookDrainHook",
+                    "path": "ec2/webServiceCluster/microServiceAutoScalingGroup/LifecycleHookDrainHook",
                     "children": {
                       "Role": {
                         "id": "Role",
-                        "path": "ecs/webServiceCluster/microServiceAutoScalingGroup/LifecycleHookDrainHook/Role",
+                        "path": "ec2/webServiceCluster/microServiceAutoScalingGroup/LifecycleHookDrainHook/Role",
                         "children": {
                           "Resource": {
                             "id": "Resource",
-                            "path": "ecs/webServiceCluster/microServiceAutoScalingGroup/LifecycleHookDrainHook/Role/Resource",
+                            "path": "ec2/webServiceCluster/microServiceAutoScalingGroup/LifecycleHookDrainHook/Role/Resource",
                             "attributes": {
                               "aws:cdk:cloudformation:type": "AWS::IAM::Role",
                               "aws:cdk:cloudformation:props": {
@@ -2111,7 +2254,7 @@
                                 "tags": [
                                   {
                                     "key": "Name",
-                                    "value": "ecs/webServiceCluster/microServiceAutoScalingGroup"
+                                    "value": "ec2/webServiceCluster/microServiceAutoScalingGroup"
                                   }
                                 ]
                               }
@@ -2119,11 +2262,11 @@
                           },
                           "DefaultPolicy": {
                             "id": "DefaultPolicy",
-                            "path": "ecs/webServiceCluster/microServiceAutoScalingGroup/LifecycleHookDrainHook/Role/DefaultPolicy",
+                            "path": "ec2/webServiceCluster/microServiceAutoScalingGroup/LifecycleHookDrainHook/Role/DefaultPolicy",
                             "children": {
                               "Resource": {
                                 "id": "Resource",
-                                "path": "ecs/webServiceCluster/microServiceAutoScalingGroup/LifecycleHookDrainHook/Role/DefaultPolicy/Resource",
+                                "path": "ec2/webServiceCluster/microServiceAutoScalingGroup/LifecycleHookDrainHook/Role/DefaultPolicy/Resource",
                                 "attributes": {
                                   "aws:cdk:cloudformation:type": "AWS::IAM::Policy",
                                   "aws:cdk:cloudformation:props": {
@@ -2154,18 +2297,18 @@
                       },
                       "Topic": {
                         "id": "Topic",
-                        "path": "ecs/webServiceCluster/microServiceAutoScalingGroup/LifecycleHookDrainHook/Topic",
+                        "path": "ec2/webServiceCluster/microServiceAutoScalingGroup/LifecycleHookDrainHook/Topic",
                         "children": {
                           "Resource": {
                             "id": "Resource",
-                            "path": "ecs/webServiceCluster/microServiceAutoScalingGroup/LifecycleHookDrainHook/Topic/Resource",
+                            "path": "ec2/webServiceCluster/microServiceAutoScalingGroup/LifecycleHookDrainHook/Topic/Resource",
                             "attributes": {
                               "aws:cdk:cloudformation:type": "AWS::SNS::Topic",
                               "aws:cdk:cloudformation:props": {
                                 "tags": [
                                   {
                                     "key": "Name",
-                                    "value": "ecs/webServiceCluster/microServiceAutoScalingGroup"
+                                    "value": "ec2/webServiceCluster/microServiceAutoScalingGroup"
                                   }
                                 ]
                               }
@@ -2175,7 +2318,7 @@
                       },
                       "Resource": {
                         "id": "Resource",
-                        "path": "ecs/webServiceCluster/microServiceAutoScalingGroup/LifecycleHookDrainHook/Resource",
+                        "path": "ec2/webServiceCluster/microServiceAutoScalingGroup/LifecycleHookDrainHook/Resource",
                         "attributes": {
                           "aws:cdk:cloudformation:type": "AWS::AutoScaling::LifecycleHook",
                           "aws:cdk:cloudformation:props": {
@@ -2205,27 +2348,27 @@
           },
           "SsmParameterValue:--aws--service--ecs--optimized-ami--amazon-linux-2--recommended--image_id:C96584B6-F00A-464E-AD19-53AFF4B05118.Parameter": {
             "id": "SsmParameterValue:--aws--service--ecs--optimized-ami--amazon-linux-2--recommended--image_id:C96584B6-F00A-464E-AD19-53AFF4B05118.Parameter",
-            "path": "ecs/SsmParameterValue:--aws--service--ecs--optimized-ami--amazon-linux-2--recommended--image_id:C96584B6-F00A-464E-AD19-53AFF4B05118.Parameter"
+            "path": "ec2/SsmParameterValue:--aws--service--ecs--optimized-ami--amazon-linux-2--recommended--image_id:C96584B6-F00A-464E-AD19-53AFF4B05118.Parameter"
           },
           "SsmParameterValue:--aws--service--ecs--optimized-ami--amazon-linux-2--recommended--image_id:C96584B6-F00A-464E-AD19-53AFF4B05118": {
             "id": "SsmParameterValue:--aws--service--ecs--optimized-ami--amazon-linux-2--recommended--image_id:C96584B6-F00A-464E-AD19-53AFF4B05118",
-            "path": "ecs/SsmParameterValue:--aws--service--ecs--optimized-ami--amazon-linux-2--recommended--image_id:C96584B6-F00A-464E-AD19-53AFF4B05118"
+            "path": "ec2/SsmParameterValue:--aws--service--ecs--optimized-ami--amazon-linux-2--recommended--image_id:C96584B6-F00A-464E-AD19-53AFF4B05118"
           },
           "ASG": {
             "id": "ASG",
-            "path": "ecs/ASG",
+            "path": "ec2/ASG",
             "children": {
               "InstanceSecurityGroup": {
                 "id": "InstanceSecurityGroup",
-                "path": "ecs/ASG/InstanceSecurityGroup",
+                "path": "ec2/ASG/InstanceSecurityGroup",
                 "children": {
                   "Resource": {
                     "id": "Resource",
-                    "path": "ecs/ASG/InstanceSecurityGroup/Resource",
+                    "path": "ec2/ASG/InstanceSecurityGroup/Resource",
                     "attributes": {
                       "aws:cdk:cloudformation:type": "AWS::EC2::SecurityGroup",
                       "aws:cdk:cloudformation:props": {
-                        "groupDescription": "ecs/ASG/InstanceSecurityGroup",
+                        "groupDescription": "ec2/ASG/InstanceSecurityGroup",
                         "securityGroupEgress": [
                           {
                             "cidrIp": "0.0.0.0/0",
@@ -2236,7 +2379,7 @@
                         "tags": [
                           {
                             "key": "Name",
-                            "value": "ecs/ASG"
+                            "value": "ec2/ASG"
                           }
                         ],
                         "vpcId": {
@@ -2244,16 +2387,41 @@
                         }
                       }
                     }
+                  },
+                  "from ec2myAlbIdSecurityGroup8B1A3880:32768-65535": {
+                    "id": "from ec2myAlbIdSecurityGroup8B1A3880:32768-65535",
+                    "path": "ec2/ASG/InstanceSecurityGroup/from ec2myAlbIdSecurityGroup8B1A3880:32768-65535",
+                    "attributes": {
+                      "aws:cdk:cloudformation:type": "AWS::EC2::SecurityGroupIngress",
+                      "aws:cdk:cloudformation:props": {
+                        "ipProtocol": "tcp",
+                        "description": "Load balancer to target",
+                        "fromPort": 32768,
+                        "groupId": {
+                          "Fn::GetAtt": [
+                            "ASGInstanceSecurityGroup0525485D",
+                            "GroupId"
+                          ]
+                        },
+                        "sourceSecurityGroupId": {
+                          "Fn::GetAtt": [
+                            "myAlbIdSecurityGroup6428301A",
+                            "GroupId"
+                          ]
+                        },
+                        "toPort": 65535
+                      }
+                    }
                   }
                 }
               },
               "InstanceRole": {
                 "id": "InstanceRole",
-                "path": "ecs/ASG/InstanceRole",
+                "path": "ec2/ASG/InstanceRole",
                 "children": {
                   "Resource": {
                     "id": "Resource",
-                    "path": "ecs/ASG/InstanceRole/Resource",
+                    "path": "ec2/ASG/InstanceRole/Resource",
                     "attributes": {
                       "aws:cdk:cloudformation:type": "AWS::IAM::Role",
                       "aws:cdk:cloudformation:props": {
@@ -2282,7 +2450,7 @@
                         "tags": [
                           {
                             "key": "Name",
-                            "value": "ecs/ASG"
+                            "value": "ec2/ASG"
                           }
                         ]
                       }
@@ -2290,11 +2458,11 @@
                   },
                   "DefaultPolicy": {
                     "id": "DefaultPolicy",
-                    "path": "ecs/ASG/InstanceRole/DefaultPolicy",
+                    "path": "ec2/ASG/InstanceRole/DefaultPolicy",
                     "children": {
                       "Resource": {
                         "id": "Resource",
-                        "path": "ecs/ASG/InstanceRole/DefaultPolicy/Resource",
+                        "path": "ec2/ASG/InstanceRole/DefaultPolicy/Resource",
                         "attributes": {
                           "aws:cdk:cloudformation:type": "AWS::IAM::Policy",
                           "aws:cdk:cloudformation:props": {
@@ -2334,7 +2502,7 @@
               },
               "InstanceProfile": {
                 "id": "InstanceProfile",
-                "path": "ecs/ASG/InstanceProfile",
+                "path": "ec2/ASG/InstanceProfile",
                 "attributes": {
                   "aws:cdk:cloudformation:type": "AWS::IAM::InstanceProfile",
                   "aws:cdk:cloudformation:props": {
@@ -2348,7 +2516,7 @@
               },
               "LaunchConfig": {
                 "id": "LaunchConfig",
-                "path": "ecs/ASG/LaunchConfig",
+                "path": "ec2/ASG/LaunchConfig",
                 "attributes": {
                   "aws:cdk:cloudformation:type": "AWS::AutoScaling::LaunchConfiguration",
                   "aws:cdk:cloudformation:props": {
@@ -2386,7 +2554,7 @@
               },
               "ASG": {
                 "id": "ASG",
-                "path": "ecs/ASG/ASG",
+                "path": "ec2/ASG/ASG",
                 "attributes": {
                   "aws:cdk:cloudformation:type": "AWS::AutoScaling::AutoScalingGroup",
                   "aws:cdk:cloudformation:props": {
@@ -2399,7 +2567,7 @@
                     "tags": [
                       {
                         "key": "Name",
-                        "value": "ecs/ASG",
+                        "value": "ec2/ASG",
                         "propagateAtLaunch": true
                       }
                     ],
@@ -2416,19 +2584,19 @@
               },
               "DrainECSHook": {
                 "id": "DrainECSHook",
-                "path": "ecs/ASG/DrainECSHook",
+                "path": "ec2/ASG/DrainECSHook",
                 "children": {
                   "Function": {
                     "id": "Function",
-                    "path": "ecs/ASG/DrainECSHook/Function",
+                    "path": "ec2/ASG/DrainECSHook/Function",
                     "children": {
                       "ServiceRole": {
                         "id": "ServiceRole",
-                        "path": "ecs/ASG/DrainECSHook/Function/ServiceRole",
+                        "path": "ec2/ASG/DrainECSHook/Function/ServiceRole",
                         "children": {
                           "Resource": {
                             "id": "Resource",
-                            "path": "ecs/ASG/DrainECSHook/Function/ServiceRole/Resource",
+                            "path": "ec2/ASG/DrainECSHook/Function/ServiceRole/Resource",
                             "attributes": {
                               "aws:cdk:cloudformation:type": "AWS::IAM::Role",
                               "aws:cdk:cloudformation:props": {
@@ -2461,7 +2629,7 @@
                                 "tags": [
                                   {
                                     "key": "Name",
-                                    "value": "ecs/ASG"
+                                    "value": "ec2/ASG"
                                   }
                                 ]
                               }
@@ -2469,11 +2637,11 @@
                           },
                           "DefaultPolicy": {
                             "id": "DefaultPolicy",
-                            "path": "ecs/ASG/DrainECSHook/Function/ServiceRole/DefaultPolicy",
+                            "path": "ec2/ASG/DrainECSHook/Function/ServiceRole/DefaultPolicy",
                             "children": {
                               "Resource": {
                                 "id": "Resource",
-                                "path": "ecs/ASG/DrainECSHook/Function/ServiceRole/DefaultPolicy/Resource",
+                                "path": "ec2/ASG/DrainECSHook/Function/ServiceRole/DefaultPolicy/Resource",
                                 "attributes": {
                                   "aws:cdk:cloudformation:type": "AWS::IAM::Policy",
                                   "aws:cdk:cloudformation:props": {
@@ -2574,7 +2742,7 @@
                       },
                       "Resource": {
                         "id": "Resource",
-                        "path": "ecs/ASG/DrainECSHook/Function/Resource",
+                        "path": "ec2/ASG/DrainECSHook/Function/Resource",
                         "attributes": {
                           "aws:cdk:cloudformation:type": "AWS::Lambda::Function",
                           "aws:cdk:cloudformation:props": {
@@ -2599,16 +2767,16 @@
                             "tags": [
                               {
                                 "key": "Name",
-                                "value": "ecs/ASG"
+                                "value": "ec2/ASG"
                               }
                             ],
                             "timeout": 310
                           }
                         }
                       },
-                      "AllowInvoke:ecsASGLifecycleHookDrainHookTopic71143AC1": {
-                        "id": "AllowInvoke:ecsASGLifecycleHookDrainHookTopic71143AC1",
-                        "path": "ecs/ASG/DrainECSHook/Function/AllowInvoke:ecsASGLifecycleHookDrainHookTopic71143AC1",
+                      "AllowInvoke:ec2ASGLifecycleHookDrainHookTopic15CDD421": {
+                        "id": "AllowInvoke:ec2ASGLifecycleHookDrainHookTopic15CDD421",
+                        "path": "ec2/ASG/DrainECSHook/Function/AllowInvoke:ec2ASGLifecycleHookDrainHookTopic15CDD421",
                         "attributes": {
                           "aws:cdk:cloudformation:type": "AWS::Lambda::Permission",
                           "aws:cdk:cloudformation:props": {
@@ -2628,11 +2796,11 @@
                       },
                       "Topic": {
                         "id": "Topic",
-                        "path": "ecs/ASG/DrainECSHook/Function/Topic",
+                        "path": "ec2/ASG/DrainECSHook/Function/Topic",
                         "children": {
                           "Resource": {
                             "id": "Resource",
-                            "path": "ecs/ASG/DrainECSHook/Function/Topic/Resource",
+                            "path": "ec2/ASG/DrainECSHook/Function/Topic/Resource",
                             "attributes": {
                               "aws:cdk:cloudformation:type": "AWS::SNS::Subscription",
                               "aws:cdk:cloudformation:props": {
@@ -2657,15 +2825,15 @@
               },
               "LifecycleHookDrainHook": {
                 "id": "LifecycleHookDrainHook",
-                "path": "ecs/ASG/LifecycleHookDrainHook",
+                "path": "ec2/ASG/LifecycleHookDrainHook",
                 "children": {
                   "Role": {
                     "id": "Role",
-                    "path": "ecs/ASG/LifecycleHookDrainHook/Role",
+                    "path": "ec2/ASG/LifecycleHookDrainHook/Role",
                     "children": {
                       "Resource": {
                         "id": "Resource",
-                        "path": "ecs/ASG/LifecycleHookDrainHook/Role/Resource",
+                        "path": "ec2/ASG/LifecycleHookDrainHook/Role/Resource",
                         "attributes": {
                           "aws:cdk:cloudformation:type": "AWS::IAM::Role",
                           "aws:cdk:cloudformation:props": {
@@ -2684,7 +2852,7 @@
                             "tags": [
                               {
                                 "key": "Name",
-                                "value": "ecs/ASG"
+                                "value": "ec2/ASG"
                               }
                             ]
                           }
@@ -2692,11 +2860,11 @@
                       },
                       "DefaultPolicy": {
                         "id": "DefaultPolicy",
-                        "path": "ecs/ASG/LifecycleHookDrainHook/Role/DefaultPolicy",
+                        "path": "ec2/ASG/LifecycleHookDrainHook/Role/DefaultPolicy",
                         "children": {
                           "Resource": {
                             "id": "Resource",
-                            "path": "ecs/ASG/LifecycleHookDrainHook/Role/DefaultPolicy/Resource",
+                            "path": "ec2/ASG/LifecycleHookDrainHook/Role/DefaultPolicy/Resource",
                             "attributes": {
                               "aws:cdk:cloudformation:type": "AWS::IAM::Policy",
                               "aws:cdk:cloudformation:props": {
@@ -2727,18 +2895,18 @@
                   },
                   "Topic": {
                     "id": "Topic",
-                    "path": "ecs/ASG/LifecycleHookDrainHook/Topic",
+                    "path": "ec2/ASG/LifecycleHookDrainHook/Topic",
                     "children": {
                       "Resource": {
                         "id": "Resource",
-                        "path": "ecs/ASG/LifecycleHookDrainHook/Topic/Resource",
+                        "path": "ec2/ASG/LifecycleHookDrainHook/Topic/Resource",
                         "attributes": {
                           "aws:cdk:cloudformation:type": "AWS::SNS::Topic",
                           "aws:cdk:cloudformation:props": {
                             "tags": [
                               {
                                 "key": "Name",
-                                "value": "ecs/ASG"
+                                "value": "ec2/ASG"
                               }
                             ]
                           }
@@ -2748,7 +2916,7 @@
                   },
                   "Resource": {
                     "id": "Resource",
-                    "path": "ecs/ASG/LifecycleHookDrainHook/Resource",
+                    "path": "ec2/ASG/LifecycleHookDrainHook/Resource",
                     "attributes": {
                       "aws:cdk:cloudformation:type": "AWS::AutoScaling::LifecycleHook",
                       "aws:cdk:cloudformation:props": {
@@ -2776,15 +2944,15 @@
           },
           "TaskDef": {
             "id": "TaskDef",
-            "path": "ecs/TaskDef",
+            "path": "ec2/TaskDef",
             "children": {
               "TaskRole": {
                 "id": "TaskRole",
-                "path": "ecs/TaskDef/TaskRole",
+                "path": "ec2/TaskDef/TaskRole",
                 "children": {
                   "Resource": {
                     "id": "Resource",
-                    "path": "ecs/TaskDef/TaskRole/Resource",
+                    "path": "ec2/TaskDef/TaskRole/Resource",
                     "attributes": {
                       "aws:cdk:cloudformation:type": "AWS::IAM::Role",
                       "aws:cdk:cloudformation:props": {
@@ -2807,19 +2975,26 @@
               },
               "Resource": {
                 "id": "Resource",
-                "path": "ecs/TaskDef/Resource",
+                "path": "ec2/TaskDef/Resource",
                 "attributes": {
                   "aws:cdk:cloudformation:type": "AWS::ECS::TaskDefinition",
                   "aws:cdk:cloudformation:props": {
                     "containerDefinitions": [
                       {
                         "essential": true,
-                        "image": "amazon/amazon-ecs-sample",
+                        "image": "dbaxy770928/carsales1:latest",
                         "memory": 512,
-                        "name": "DefaultContainer"
+                        "name": "DefaultContainer",
+                        "portMappings": [
+                          {
+                            "containerPort": 80,
+                            "hostPort": 0,
+                            "protocol": "tcp"
+                          }
+                        ]
                       }
                     ],
-                    "family": "ecsTaskDef09136995",
+                    "family": "ec2TaskDefB431D9E0",
                     "networkMode": "bridge",
                     "requiresCompatibilities": [
                       "EC2"
@@ -2835,17 +3010,17 @@
               },
               "DefaultContainer": {
                 "id": "DefaultContainer",
-                "path": "ecs/TaskDef/DefaultContainer"
+                "path": "ec2/TaskDef/DefaultContainer"
               }
             }
           },
           "Service": {
             "id": "Service",
-            "path": "ecs/Service",
+            "path": "ec2/Service",
             "children": {
               "Service": {
                 "id": "Service",
-                "path": "ecs/Service/Service",
+                "path": "ec2/Service/Service",
                 "attributes": {
                   "aws:cdk:cloudformation:type": "AWS::ECS::Service",
                   "aws:cdk:cloudformation:props": {
@@ -2858,51 +3033,242 @@
                     },
                     "desiredCount": 1,
                     "enableEcsManagedTags": false,
+                    "healthCheckGracePeriodSeconds": 60,
                     "launchType": "EC2",
+                    "loadBalancers": [
+                      {
+                        "targetGroupArn": {
+                          "Ref": "myAlbIdlisternerIdECS1Group41A8899E"
+                        },
+                        "containerName": "DefaultContainer",
+                        "containerPort": 80
+                      }
+                    ],
                     "schedulingStrategy": "REPLICA",
                     "taskDefinition": {
                       "Ref": "TaskDef54694570"
                     }
                   }
                 }
-              }
-            }
-          },
-          "ImportedALB": {
-            "id": "ImportedALB",
-            "path": "ecs/ImportedALB",
-            "children": {
-              "SecurityGroup": {
-                "id": "SecurityGroup",
-                "path": "ecs/ImportedALB/SecurityGroup"
-              }
-            }
-          },
-          "ImportedListener": {
-            "id": "ImportedListener",
-            "path": "ecs/ImportedListener"
-          },
-          "SecurityGroup": {
-            "id": "SecurityGroup",
-            "path": "ecs/SecurityGroup"
-          },
-          "ecs-service1": {
-            "id": "ecs-service1",
-            "path": "ecs/ecs-service1",
-            "children": {
-              "Resource": {
-                "id": "Resource",
-                "path": "ecs/ecs-service1/Resource",
-                "attributes": {
-                  "aws:cdk:cloudformation:type": "AWS::ElasticLoadBalancingV2::TargetGroup",
-                  "aws:cdk:cloudformation:props": {
-                    "port": 80,
-                    "protocol": "HTTP",
-                    "vpcId": {
-                      "Fn::ImportValue": "vpc:ExportsOutputRefdevVPC524BF54C27F5E3C9"
+              },
+              "ScalingRole": {
+                "id": "ScalingRole",
+                "path": "ec2/Service/ScalingRole"
+              },
+              "TaskCount": {
+                "id": "TaskCount",
+                "path": "ec2/Service/TaskCount",
+                "children": {
+                  "Target": {
+                    "id": "Target",
+                    "path": "ec2/Service/TaskCount/Target",
+                    "children": {
+                      "Resource": {
+                        "id": "Resource",
+                        "path": "ec2/Service/TaskCount/Target/Resource",
+                        "attributes": {
+                          "aws:cdk:cloudformation:type": "AWS::ApplicationAutoScaling::ScalableTarget",
+                          "aws:cdk:cloudformation:props": {
+                            "maxCapacity": 5,
+                            "minCapacity": 1,
+                            "resourceId": {
+                              "Fn::Join": [
+                                "",
+                                [
+                                  "service/",
+                                  {
+                                    "Ref": "webServiceCluster5D072757"
+                                  },
+                                  "/",
+                                  {
+                                    "Fn::GetAtt": [
+                                      "ServiceD69D759B",
+                                      "Name"
+                                    ]
+                                  }
+                                ]
+                              ]
+                            },
+                            "roleArn": {
+                              "Fn::Join": [
+                                "",
+                                [
+                                  "arn:",
+                                  {
+                                    "Ref": "AWS::Partition"
+                                  },
+                                  ":iam::",
+                                  {
+                                    "Ref": "AWS::AccountId"
+                                  },
+                                  ":role/aws-service-role/ecs.application-autoscaling.amazonaws.com/AWSServiceRoleForApplicationAutoScaling_ECSService"
+                                ]
+                              ]
+                            },
+                            "scalableDimension": "ecs:service:DesiredCount",
+                            "serviceNamespace": "ecs"
+                          }
+                        }
+                      },
+                      "memory_usage": {
+                        "id": "memory_usage",
+                        "path": "ec2/Service/TaskCount/Target/memory_usage",
+                        "children": {
+                          "Resource": {
+                            "id": "Resource",
+                            "path": "ec2/Service/TaskCount/Target/memory_usage/Resource",
+                            "attributes": {
+                              "aws:cdk:cloudformation:type": "AWS::ApplicationAutoScaling::ScalingPolicy",
+                              "aws:cdk:cloudformation:props": {
+                                "policyName": "ec2ServiceTaskCountTargetmemoryusageB6D5F927",
+                                "policyType": "TargetTrackingScaling",
+                                "scalingTargetId": {
+                                  "Ref": "ServiceTaskCountTarget23E25614"
+                                },
+                                "targetTrackingScalingPolicyConfiguration": {
+                                  "predefinedMetricSpecification": {
+                                    "predefinedMetricType": "ECSServiceAverageMemoryUtilization"
+                                  },
+                                  "targetValue": 75
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "cpu_usage": {
+                        "id": "cpu_usage",
+                        "path": "ec2/Service/TaskCount/Target/cpu_usage",
+                        "children": {
+                          "Resource": {
+                            "id": "Resource",
+                            "path": "ec2/Service/TaskCount/Target/cpu_usage/Resource",
+                            "attributes": {
+                              "aws:cdk:cloudformation:type": "AWS::ApplicationAutoScaling::ScalingPolicy",
+                              "aws:cdk:cloudformation:props": {
+                                "policyName": "ec2ServiceTaskCountTargetcpuusageDAEF5489",
+                                "policyType": "TargetTrackingScaling",
+                                "scalingTargetId": {
+                                  "Ref": "ServiceTaskCountTarget23E25614"
+                                },
+                                "targetTrackingScalingPolicyConfiguration": {
+                                  "predefinedMetricSpecification": {
+                                    "predefinedMetricType": "ECSServiceAverageCPUUtilization"
+                                  },
+                                  "targetValue": 70
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
                     }
                   }
                 }
+              }
+            }
+          },
+          "listener rule1": {
+            "id": "listener rule1",
+            "path": "ec2/listener rule1",
+            "children": {
+              "Resource": {
+                "id": "Resource",
+                "path": "ec2/listener rule1/Resource",
+                "attributes": {
+                  "aws:cdk:cloudformation:type": "AWS::ElasticLoadBalancingV2::ListenerRule",
+                  "aws:cdk:cloudformation:props": {
+                    "actions": [
+                      {
+                        "type": "forward",
+                        "targetGroupArn": {
+                          "Ref": "myAlbIdlisternerIdECS1Group41A8899E"
+                        }
+                      }
+                    ],
+                    "conditions": [
+                      {
+                        "field": "path-pattern",
+                        "values": [
+                          "/web/*"
+                        ]
+                      }
+                    ],
+                    "listenerArn": {
+                      "Ref": "myAlbIdlisternerId2CD6FC0A"
+                    },
+                    "priority": 1
+                  }
+                }
+              }
+            }
+          },
+          "listener rule2": {
+            "id": "listener rule2",
+            "path": "ec2/listener rule2",
+            "children": {
+              "Resource": {
+                "id": "Resource",
+                "path": "ec2/listener rule2/Resource",
+                "attributes": {
+                  "aws:cdk:cloudformation:type": "AWS::ElasticLoadBalancingV2::ListenerRule",
+                  "aws:cdk:cloudformation:props": {
+                    "actions": [
+                      {
+                        "type": "forward",
+                        "targetGroupArn": {
+                          "Ref": "myAlbIdlisternerIdlistenerIdGroup80F930FC"
+                        }
+                      }
+                    ],
+                    "conditions": [
+                      {
+                        "field": "path-pattern",
+                        "values": [
+                          "/api/*"
+                        ]
+                      }
+                    ],
+                    "listenerArn": {
+                      "Ref": "myAlbIdlisternerId2CD6FC0A"
+                    },
+                    "priority": 2
+                  }
+                }
+              }
+            }
+          },
+          "SsmParameterValue:--dev--acm-arn:C96584B6-F00A-464E-AD19-53AFF4B05118.Parameter": {
+            "id": "SsmParameterValue:--dev--acm-arn:C96584B6-F00A-464E-AD19-53AFF4B05118.Parameter",
+            "path": "ec2/SsmParameterValue:--dev--acm-arn:C96584B6-F00A-464E-AD19-53AFF4B05118.Parameter"
+          },
+          "SsmParameterValue:--dev--acm-arn:C96584B6-F00A-464E-AD19-53AFF4B05118": {
+            "id": "SsmParameterValue:--dev--acm-arn:C96584B6-F00A-464E-AD19-53AFF4B05118",
+            "path": "ec2/SsmParameterValue:--dev--acm-arn:C96584B6-F00A-464E-AD19-53AFF4B05118"
+          },
+          "albDomainName": {
+            "id": "albDomainName",
+            "path": "ec2/albDomainName"
+          },
+          "ALB-name": {
+            "id": "ALB-name",
+            "path": "ec2/ALB-name"
+          },
+          "ALB-ARN": {
+            "id": "ALB-ARN",
+            "path": "ec2/ALB-ARN"
+          },
+          "Exports": {
+            "id": "Exports",
+            "path": "ec2/Exports",
+            "children": {
+              "Output{\"Fn::GetAtt\":[\"myAlbIdF3EF6ABD\",\"CanonicalHostedZoneID\"]}": {
+                "id": "Output{\"Fn::GetAtt\":[\"myAlbIdF3EF6ABD\",\"CanonicalHostedZoneID\"]}",
+                "path": "ec2/Exports/Output{\"Fn::GetAtt\":[\"myAlbIdF3EF6ABD\",\"CanonicalHostedZoneID\"]}"
+              },
+              "Output{\"Fn::GetAtt\":[\"myAlbIdF3EF6ABD\",\"DNSName\"]}": {
+                "id": "Output{\"Fn::GetAtt\":[\"myAlbIdF3EF6ABD\",\"DNSName\"]}",
+                "path": "ec2/Exports/Output{\"Fn::GetAtt\":[\"myAlbIdF3EF6ABD\",\"DNSName\"]}"
               }
             }
           }
@@ -6991,6 +7357,29 @@
               }
             }
           },
+          "acm-arn": {
+            "id": "acm-arn",
+            "path": "acm/acm-arn",
+            "children": {
+              "Resource": {
+                "id": "Resource",
+                "path": "acm/acm-arn/Resource",
+                "attributes": {
+                  "aws:cdk:cloudformation:type": "AWS::SSM::Parameter",
+                  "aws:cdk:cloudformation:props": {
+                    "type": "String",
+                    "value": {
+                      "Fn::GetAtt": [
+                        "acmidCertificateRequestorResource9554A959",
+                        "Arn"
+                      ]
+                    },
+                    "name": "/dev/acm-arn"
+                  }
+                }
+              }
+            }
+          },
           "Exports": {
             "id": "Exports",
             "path": "acm/Exports",
@@ -7189,16 +7578,6 @@
                 }
               }
             }
-          },
-          "Exports": {
-            "id": "Exports",
-            "path": "cdn/Exports",
-            "children": {
-              "Output{\"Fn::GetAtt\":[\"webhostingcdnCFDistribution1D75AAA9\",\"DomainName\"]}": {
-                "id": "Output{\"Fn::GetAtt\":[\"webhostingcdnCFDistribution1D75AAA9\",\"DomainName\"]}",
-                "path": "cdn/Exports/Output{\"Fn::GetAtt\":[\"webhostingcdnCFDistribution1D75AAA9\",\"DomainName\"]}"
-              }
-            }
           }
         }
       },
@@ -7208,41 +7587,37 @@
         "children": {
           "hosted-zone": {
             "id": "hosted-zone",
-            "path": "route53/hosted-zone",
-            "children": {
-              "Resource": {
-                "id": "Resource",
-                "path": "route53/hosted-zone/Resource",
-                "attributes": {
-                  "aws:cdk:cloudformation:type": "AWS::Route53::HostedZone",
-                  "aws:cdk:cloudformation:props": {
-                    "name": "cloudevangelist.ca."
-                  }
-                }
-              }
-            }
+            "path": "route53/hosted-zone"
           },
-          "cdn-record": {
-            "id": "cdn-record",
-            "path": "route53/cdn-record",
+          "AliasRecord": {
+            "id": "AliasRecord",
+            "path": "route53/AliasRecord",
             "children": {
               "Resource": {
                 "id": "Resource",
-                "path": "route53/cdn-record/Resource",
+                "path": "route53/AliasRecord/Resource",
                 "attributes": {
                   "aws:cdk:cloudformation:type": "AWS::Route53::RecordSet",
                   "aws:cdk:cloudformation:props": {
-                    "name": "app.cloudevangelist.ca.",
+                    "name": "app.aconex.design.",
                     "type": "A",
                     "aliasTarget": {
-                      "hostedZoneId": "Z2FDTNDATAQYW2",
+                      "hostedZoneId": {
+                        "Fn::ImportValue": "ec2:ExportsOutputFnGetAttmyAlbIdF3EF6ABDCanonicalHostedZoneID0D492933"
+                      },
                       "dnsName": {
-                        "Fn::ImportValue": "cdn:ExportsOutputFnGetAttwebhostingcdnCFDistribution1D75AAA9DomainName561669FE"
+                        "Fn::Join": [
+                          "",
+                          [
+                            "dualstack.",
+                            {
+                              "Fn::ImportValue": "ec2:ExportsOutputFnGetAttmyAlbIdF3EF6ABDDNSName7DDD3323"
+                            }
+                          ]
+                        ]
                       }
                     },
-                    "hostedZoneId": {
-                      "Ref": "hostedzone0562BB58"
-                    }
+                    "hostedZoneId": "Z2JDNY3K5WTR6X"
                   }
                 }
               }
@@ -7259,9 +7634,7 @@
                   "aws:cdk:cloudformation:type": "AWS::SSM::Parameter",
                   "aws:cdk:cloudformation:props": {
                     "type": "String",
-                    "value": {
-                      "Ref": "hostedzone0562BB58"
-                    },
+                    "value": "Z2JDNY3K5WTR6X",
                     "name": "/dev/zone-id"
                   }
                 }

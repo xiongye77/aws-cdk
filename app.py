@@ -21,14 +21,14 @@ from stacks.route53_stack import DnsStack
 from stacks.acm_stack import ACMStack
 from stacks.cloudtrail_stack import CloudTrailStack
 from stacks.kibana_stack import KibanaStack
-from stacks.ecs_stack import ECSStack
+#from stacks.ecs_stack import ECSStack
 
 app = core.App()
 
 vpc_stack = VPCStack(app, 'vpc')
 security_stack = SecurityStack(app, 'security-stack', vpc=vpc_stack.vpc)
 ec2server_stack = EC2ServerStack(app,'ec2',vpc=vpc_stack.vpc)
-ecs_stack = ECSStack(app,'ecs',vpc=vpc_stack.vpc)
+#ecs_stack = ECSStack(app,'ecs',vpc=vpc_stack.vpc)
 bastion_stack = BastionStack(app, 'bastion', vpc=vpc_stack.vpc, sg=security_stack.bastion_sg)
 kms_stack = KMSStack(app,'kms')
 s3_stack = S3Stack(app,'s3buckets')
@@ -43,7 +43,8 @@ cp_frontend = CodePipelineFrontendStack(app,'cp-frontend', webhostingbucket=core
 waf_stack = WafStack(app,'waf')
 acm_stack = ACMStack(app, 'acm')
 cdn_stack = CDNStack(app,'cdn',s3bucket=core.Fn.import_value('frontend-bucket'),acmcert=acm_stack.cert_manager)
-route53 = DnsStack(app, 'route53',cdnid=cdn_stack.cdn_id)
+#route53 = DnsStack(app, 'route53',cdnid=cdn_stack.cdn_id)
+route53 = DnsStack(app, 'route53',elbv2=ec2server_stack.elbv2)
 cloudtrail = CloudTrailStack(app,'cloudtrail', s3bucket=s3_stack.cloudtrail_bucket)
 kibana = KibanaStack(app,'kibana', vpc=vpc_stack.vpc, kibanasg=security_stack.kibana_sg)
 

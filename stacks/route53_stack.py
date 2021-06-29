@@ -9,19 +9,27 @@ from aws_cdk import (
 
 class DnsStack(core.Stack):
 
-    def __init__(self, scope: core.Construct, id: str,cdnid,  **kwargs) -> None:
+    def __init__(self, scope: core.Construct, id: str,elbv2,  **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         prj_name = self.node.try_get_context("project_name")
         env_name = self.node.try_get_context("env")
 
-        hosted_zone = r53.HostedZone(self, 'hosted-zone',
-            zone_name='cloudevangelist.ca'
-        )
+        #hosted_zone = r53.HostedZone(self, 'hosted-zone',
+        #    zone_name='aconex.design'
+        #)
+
+        hosted_zone = r53.HostedZone.from_hosted_zone_attributes(self,'hosted-zone',hosted_zone_id="Z2JDNY3K5WTR6X",zone_name="aconex.design")
         
-        r53.ARecord(self, 'cdn-record',
+        #r53.ARecord(self, 'cdn-record',
+        #    zone=hosted_zone,
+        #    target=r53.RecordTarget.from_alias(alias_target=r53target.CloudFrontTarget(cdnid)),
+        #    record_name='app'
+        #)
+
+        r53.ARecord(self, "AliasRecord",
             zone=hosted_zone,
-            target=r53.RecordTarget.from_alias(alias_target=r53target.CloudFrontTarget(cdnid)),
+            target=r53.RecordTarget.from_alias(alias_target=r53target.LoadBalancerTarget(elbv2)),
             record_name='app'
         )
 
