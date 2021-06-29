@@ -9,6 +9,7 @@ aws-cdk.aws-elasticache
 aws-cdk.aws-secretsmanager
 aws-cdk.aws-elasticsearch
 aws-cdk.aws-cognito
+aws-cdk.aws-ecs-patterns
 aws-cdk.aws-apigateway
 aws-cdk.aws-lambda
 aws-cdk.aws-sns

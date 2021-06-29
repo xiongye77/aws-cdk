@@ -127,6 +127,30 @@
         "aws:cdk:path": "ec2/myAlbId/SecurityGroup/to ec2ASGInstanceSecurityGroupC5AD32D2:32768-65535"
       }
     },
+    "myAlbIdSecurityGrouptoec2Service2SecurityGroup9426CD1F80097B6138": {
+      "Type": "AWS::EC2::SecurityGroupEgress",
+      "Properties": {
+        "GroupId": {
+          "Fn::GetAtt": [
+            "myAlbIdSecurityGroup6428301A",
+            "GroupId"
+          ]
+        },
+        "IpProtocol": "tcp",
+        "Description": "Load balancer to target",
+        "DestinationSecurityGroupId": {
+          "Fn::GetAtt": [
+            "Service2SecurityGroup0BEEFA6E",
+            "GroupId"
+          ]
+        },
+        "FromPort": 80,
+        "ToPort": 80
+      },
+      "Metadata": {
+        "aws:cdk:path": "ec2/myAlbId/SecurityGroup/to ec2Service2SecurityGroup9426CD1F:80"
+      }
+    },
     "myAlbIdlisternerId2CD6FC0A": {
       "Type": "AWS::ElasticLoadBalancingV2::Listener",
       "Properties": {
@@ -150,41 +174,13 @@
         "aws:cdk:path": "ec2/myAlbId/listernerId/Resource"
       }
     },
-    "myAlbIdlisternerIdlistenerIdGroup80F930FC": {
-      "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
-      "Properties": {
-        "Port": 80,
-        "Protocol": "HTTP",
-        "TargetType": "instance",
-        "VpcId": {
-          "Fn::ImportValue": "vpc:ExportsOutputRefdevVPC524BF54C27F5E3C9"
-        }
-      },
-      "Metadata": {
-        "aws:cdk:path": "ec2/myAlbId/listernerId/listenerIdGroup/Resource"
-      }
-    },
-    "myAlbIdlisternerIdECS1Group41A8899E": {
-      "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
-      "Properties": {
-        "Port": 80,
-        "Protocol": "HTTP",
-        "TargetType": "instance",
-        "VpcId": {
-          "Fn::ImportValue": "vpc:ExportsOutputRefdevVPC524BF54C27F5E3C9"
-        }
-      },
-      "Metadata": {
-        "aws:cdk:path": "ec2/myAlbId/listernerId/ECS1Group/Resource"
-      }
-    },
     "myAlbIdhttpsC5A67B18": {
       "Type": "AWS::ElasticLoadBalancingV2::Listener",
       "Properties": {
         "DefaultActions": [
           {
             "TargetGroupArn": {
-              "Ref": "myAlbIdlisternerIdECS1Group41A8899E"
+              "Ref": "myAlbIdhttpsECS2Group6491D9A9"
             },
             "Type": "forward"
           }
@@ -204,6 +200,48 @@
       },
       "Metadata": {
         "aws:cdk:path": "ec2/myAlbId/https/Resource"
+      }
+    },
+    "myAlbIdhttpslistenerIdGroupFB449604": {
+      "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+      "Properties": {
+        "Port": 80,
+        "Protocol": "HTTP",
+        "TargetType": "instance",
+        "VpcId": {
+          "Fn::ImportValue": "vpc:ExportsOutputRefdevVPC524BF54C27F5E3C9"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "ec2/myAlbId/https/listenerIdGroup/Resource"
+      }
+    },
+    "myAlbIdhttpsECS1GroupF3F0860C": {
+      "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+      "Properties": {
+        "Port": 80,
+        "Protocol": "HTTP",
+        "TargetType": "instance",
+        "VpcId": {
+          "Fn::ImportValue": "vpc:ExportsOutputRefdevVPC524BF54C27F5E3C9"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "ec2/myAlbId/https/ECS1Group/Resource"
+      }
+    },
+    "myAlbIdhttpsECS2Group6491D9A9": {
+      "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+      "Properties": {
+        "Port": 80,
+        "Protocol": "HTTP",
+        "TargetType": "ip",
+        "VpcId": {
+          "Fn::ImportValue": "vpc:ExportsOutputRefdevVPC524BF54C27F5E3C9"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "ec2/myAlbId/https/ECS2Group/Resource"
       }
     },
     "webServerRoleId125658B3": {
@@ -370,7 +408,7 @@
         ],
         "TargetGroupARNs": [
           {
-            "Ref": "myAlbIdlisternerIdlistenerIdGroup80F930FC"
+            "Ref": "myAlbIdhttpslistenerIdGroupFB449604"
           }
         ],
         "VPCZoneIdentifier": [
@@ -1512,7 +1550,7 @@
             "ContainerName": "DefaultContainer",
             "ContainerPort": 80,
             "TargetGroupArn": {
-              "Ref": "myAlbIdlisternerIdECS1Group41A8899E"
+              "Ref": "myAlbIdhttpsECS1GroupF3F0860C"
             }
           }
         ],
@@ -1523,10 +1561,10 @@
       },
       "DependsOn": [
         "listenerrule1031DAB14",
-        "myAlbIdhttpsC5A67B18",
-        "myAlbIdlisternerIdECS1Group41A8899E",
-        "myAlbIdlisternerIdlistenerIdGroup80F930FC",
-        "myAlbIdlisternerId2CD6FC0A"
+        "myAlbIdhttpsECS1GroupF3F0860C",
+        "myAlbIdhttpsECS2Group6491D9A9",
+        "myAlbIdhttpslistenerIdGroupFB449604",
+        "myAlbIdhttpsC5A67B18"
       ],
       "Metadata": {
         "aws:cdk:path": "ec2/Service/Service"
@@ -1616,13 +1654,169 @@
         "aws:cdk:path": "ec2/Service/TaskCount/Target/cpu_usage/Resource"
       }
     },
+    "taskDefTaskRole62C7276F": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ecs-tasks.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "ec2/taskDef/TaskRole/Resource"
+      }
+    },
+    "taskDef43A87EA0": {
+      "Type": "AWS::ECS::TaskDefinition",
+      "Properties": {
+        "ContainerDefinitions": [
+          {
+            "Essential": true,
+            "Image": "dbaxy770928/carsales2:latest",
+            "Name": "webContainer",
+            "PortMappings": [
+              {
+                "ContainerPort": 80,
+                "Protocol": "tcp"
+              }
+            ]
+          }
+        ],
+        "Cpu": "256",
+        "Family": "ec2taskDef10B20F07",
+        "Memory": "512",
+        "NetworkMode": "awsvpc",
+        "RequiresCompatibilities": [
+          "FARGATE"
+        ],
+        "TaskRoleArn": {
+          "Fn::GetAtt": [
+            "taskDefTaskRole62C7276F",
+            "Arn"
+          ]
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "ec2/taskDef/Resource"
+      }
+    },
+    "Service2ServiceEE0EB41F": {
+      "Type": "AWS::ECS::Service",
+      "Properties": {
+        "Cluster": {
+          "Ref": "webServiceCluster5D072757"
+        },
+        "DeploymentConfiguration": {
+          "MaximumPercent": 200,
+          "MinimumHealthyPercent": 50
+        },
+        "DesiredCount": 1,
+        "EnableECSManagedTags": false,
+        "HealthCheckGracePeriodSeconds": 60,
+        "LaunchType": "FARGATE",
+        "LoadBalancers": [
+          {
+            "ContainerName": "webContainer",
+            "ContainerPort": 80,
+            "TargetGroupArn": {
+              "Ref": "myAlbIdhttpsECS2Group6491D9A9"
+            }
+          }
+        ],
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "AssignPublicIp": "ENABLED",
+            "SecurityGroups": [
+              {
+                "Fn::GetAtt": [
+                  "Service2SecurityGroup0BEEFA6E",
+                  "GroupId"
+                ]
+              }
+            ],
+            "Subnets": [
+              {
+                "Fn::ImportValue": "vpc:ExportsOutputRefdevVPCPublicSubnet1Subnet2E5540ABA39DCC67"
+              },
+              {
+                "Fn::ImportValue": "vpc:ExportsOutputRefdevVPCPublicSubnet2Subnet2C6C27ACD536E4EE"
+              }
+            ]
+          }
+        },
+        "TaskDefinition": {
+          "Ref": "taskDef43A87EA0"
+        }
+      },
+      "DependsOn": [
+        "listenerrule3A5F8A893",
+        "myAlbIdhttpsECS1GroupF3F0860C",
+        "myAlbIdhttpsECS2Group6491D9A9",
+        "myAlbIdhttpslistenerIdGroupFB449604",
+        "myAlbIdhttpsC5A67B18"
+      ],
+      "Metadata": {
+        "aws:cdk:path": "ec2/Service2/Service"
+      }
+    },
+    "Service2SecurityGroup0BEEFA6E": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "ec2/Service2/SecurityGroup",
+        "SecurityGroupEgress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Allow all outbound traffic by default",
+            "IpProtocol": "-1"
+          }
+        ],
+        "VpcId": {
+          "Fn::ImportValue": "vpc:ExportsOutputRefdevVPC524BF54C27F5E3C9"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "ec2/Service2/SecurityGroup/Resource"
+      }
+    },
+    "Service2SecurityGroupfromec2myAlbIdSecurityGroup8B1A388080E27FF7C4": {
+      "Type": "AWS::EC2::SecurityGroupIngress",
+      "Properties": {
+        "IpProtocol": "tcp",
+        "Description": "Load balancer to target",
+        "FromPort": 80,
+        "GroupId": {
+          "Fn::GetAtt": [
+            "Service2SecurityGroup0BEEFA6E",
+            "GroupId"
+          ]
+        },
+        "SourceSecurityGroupId": {
+          "Fn::GetAtt": [
+            "myAlbIdSecurityGroup6428301A",
+            "GroupId"
+          ]
+        },
+        "ToPort": 80
+      },
+      "Metadata": {
+        "aws:cdk:path": "ec2/Service2/SecurityGroup/from ec2myAlbIdSecurityGroup8B1A3880:80"
+      }
+    },
     "listenerrule1031DAB14": {
       "Type": "AWS::ElasticLoadBalancingV2::ListenerRule",
       "Properties": {
         "Actions": [
           {
             "TargetGroupArn": {
-              "Ref": "myAlbIdlisternerIdECS1Group41A8899E"
+              "Ref": "myAlbIdhttpsECS1GroupF3F0860C"
             },
             "Type": "forward"
           }
@@ -1636,7 +1830,7 @@
           }
         ],
         "ListenerArn": {
-          "Ref": "myAlbIdlisternerId2CD6FC0A"
+          "Ref": "myAlbIdhttpsC5A67B18"
         },
         "Priority": 1
       },
@@ -1650,7 +1844,7 @@
         "Actions": [
           {
             "TargetGroupArn": {
-              "Ref": "myAlbIdlisternerIdlistenerIdGroup80F930FC"
+              "Ref": "myAlbIdhttpslistenerIdGroupFB449604"
             },
             "Type": "forward"
           }
@@ -1664,7 +1858,7 @@
           }
         ],
         "ListenerArn": {
-          "Ref": "myAlbIdlisternerId2CD6FC0A"
+          "Ref": "myAlbIdhttpsC5A67B18"
         },
         "Priority": 2
       },
@@ -1672,10 +1866,38 @@
         "aws:cdk:path": "ec2/listener rule2/Resource"
       }
     },
+    "listenerrule3A5F8A893": {
+      "Type": "AWS::ElasticLoadBalancingV2::ListenerRule",
+      "Properties": {
+        "Actions": [
+          {
+            "TargetGroupArn": {
+              "Ref": "myAlbIdhttpsECS2Group6491D9A9"
+            },
+            "Type": "forward"
+          }
+        ],
+        "Conditions": [
+          {
+            "Field": "path-pattern",
+            "Values": [
+              "/test/*"
+            ]
+          }
+        ],
+        "ListenerArn": {
+          "Ref": "myAlbIdhttpsC5A67B18"
+        },
+        "Priority": 3
+      },
+      "Metadata": {
+        "aws:cdk:path": "ec2/listener rule3/Resource"
+      }
+    },
     "CDKMetadata": {
       "Type": "AWS::CDK::Metadata",
       "Properties": {
-        "Modules": "aws-cdk=1.110.1,@aws-cdk/assets=1.51.0,@aws-cdk/aws-apigateway=1.51.0,@aws-cdk/aws-applicationautoscaling=1.51.0,@aws-cdk/aws-autoscaling=1.51.0,@aws-cdk/aws-autoscaling-common=1.51.0,@aws-cdk/aws-autoscaling-hooktargets=1.51.0,@aws-cdk/aws-batch=1.51.0,@aws-cdk/aws-certificatemanager=1.51.0,@aws-cdk/aws-cloudformation=1.51.0,@aws-cdk/aws-cloudfront=1.51.0,@aws-cdk/aws-cloudtrail=1.51.0,@aws-cdk/aws-cloudwatch=1.51.0,@aws-cdk/aws-codebuild=1.51.0,@aws-cdk/aws-codecommit=1.51.0,@aws-cdk/aws-codedeploy=1.51.0,@aws-cdk/aws-codepipeline=1.51.0,@aws-cdk/aws-codepipeline-actions=1.51.0,@aws-cdk/aws-cognito=1.51.0,@aws-cdk/aws-ec2=1.51.0,@aws-cdk/aws-ecr=1.51.0,@aws-cdk/aws-ecr-assets=1.51.0,@aws-cdk/aws-ecs=1.51.0,@aws-cdk/aws-efs=1.51.0,@aws-cdk/aws-elasticache=1.51.0,@aws-cdk/aws-elasticloadbalancing=1.51.0,@aws-cdk/aws-elasticloadbalancingv2=1.51.0,@aws-cdk/aws-elasticsearch=1.51.0,@aws-cdk/aws-events=1.51.0,@aws-cdk/aws-events-targets=1.51.0,@aws-cdk/aws-iam=1.51.0,@aws-cdk/aws-kinesis=1.51.0,@aws-cdk/aws-kms=1.51.0,@aws-cdk/aws-lambda=1.51.0,@aws-cdk/aws-logs=1.51.0,@aws-cdk/aws-rds=1.51.0,@aws-cdk/aws-route53=1.51.0,@aws-cdk/aws-route53-targets=1.51.0,@aws-cdk/aws-s3=1.51.0,@aws-cdk/aws-s3-assets=1.51.0,@aws-cdk/aws-sam=1.51.0,@aws-cdk/aws-secretsmanager=1.51.0,@aws-cdk/aws-servicediscovery=1.51.0,@aws-cdk/aws-sns=1.51.0,@aws-cdk/aws-sns-subscriptions=1.51.0,@aws-cdk/aws-sqs=1.51.0,@aws-cdk/aws-ssm=1.51.0,@aws-cdk/aws-stepfunctions=1.51.0,@aws-cdk/aws-wafv2=1.51.0,@aws-cdk/cloud-assembly-schema=1.51.0,@aws-cdk/core=1.51.0,@aws-cdk/custom-resources=1.51.0,@aws-cdk/cx-api=1.51.0,@aws-cdk/region-info=1.51.0,jsii-runtime=Python/3.8.10"
+        "Modules": "aws-cdk=1.110.1,@aws-cdk/assets=1.51.0,@aws-cdk/aws-apigateway=1.51.0,@aws-cdk/aws-applicationautoscaling=1.51.0,@aws-cdk/aws-autoscaling=1.51.0,@aws-cdk/aws-autoscaling-common=1.51.0,@aws-cdk/aws-autoscaling-hooktargets=1.51.0,@aws-cdk/aws-batch=1.51.0,@aws-cdk/aws-certificatemanager=1.51.0,@aws-cdk/aws-cloudformation=1.51.0,@aws-cdk/aws-cloudfront=1.51.0,@aws-cdk/aws-cloudtrail=1.51.0,@aws-cdk/aws-cloudwatch=1.51.0,@aws-cdk/aws-codebuild=1.51.0,@aws-cdk/aws-codecommit=1.51.0,@aws-cdk/aws-codedeploy=1.51.0,@aws-cdk/aws-codepipeline=1.51.0,@aws-cdk/aws-codepipeline-actions=1.51.0,@aws-cdk/aws-cognito=1.51.0,@aws-cdk/aws-ec2=1.51.0,@aws-cdk/aws-ecr=1.51.0,@aws-cdk/aws-ecr-assets=1.51.0,@aws-cdk/aws-ecs=1.51.0,@aws-cdk/aws-ecs-patterns=1.51.0,@aws-cdk/aws-efs=1.51.0,@aws-cdk/aws-elasticache=1.51.0,@aws-cdk/aws-elasticloadbalancing=1.51.0,@aws-cdk/aws-elasticloadbalancingv2=1.51.0,@aws-cdk/aws-elasticsearch=1.51.0,@aws-cdk/aws-events=1.51.0,@aws-cdk/aws-events-targets=1.51.0,@aws-cdk/aws-iam=1.51.0,@aws-cdk/aws-kinesis=1.51.0,@aws-cdk/aws-kms=1.51.0,@aws-cdk/aws-lambda=1.51.0,@aws-cdk/aws-logs=1.51.0,@aws-cdk/aws-rds=1.51.0,@aws-cdk/aws-route53=1.51.0,@aws-cdk/aws-route53-targets=1.51.0,@aws-cdk/aws-s3=1.51.0,@aws-cdk/aws-s3-assets=1.51.0,@aws-cdk/aws-sam=1.51.0,@aws-cdk/aws-secretsmanager=1.51.0,@aws-cdk/aws-servicediscovery=1.51.0,@aws-cdk/aws-sns=1.51.0,@aws-cdk/aws-sns-subscriptions=1.51.0,@aws-cdk/aws-sqs=1.51.0,@aws-cdk/aws-ssm=1.51.0,@aws-cdk/aws-stepfunctions=1.51.0,@aws-cdk/aws-wafv2=1.51.0,@aws-cdk/cloud-assembly-schema=1.51.0,@aws-cdk/core=1.51.0,@aws-cdk/custom-resources=1.51.0,@aws-cdk/cx-api=1.51.0,@aws-cdk/region-info=1.51.0,jsii-runtime=Python/3.8.10"
       },
       "Condition": "CDKMetadataAvailable"
     }

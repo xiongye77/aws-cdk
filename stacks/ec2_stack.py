@@ -4,6 +4,7 @@ from aws_cdk import aws_ecs as ecs
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_ssm as ssm
 from aws_cdk import aws_autoscaling as autoscaling
+from aws_cdk import aws_ecs_patterns as ecs_patterns
 from aws_cdk import core
 
 
@@ -92,8 +93,7 @@ sudo service httpd start
         web_server_asg.connections.allow_from(alb, ec2.Port.tcp(80),
                                               description="Allows ASG Security Group receive traffic from ALB")
 
-        # Add AutoScaling Group Instances to ALB Target Group
-        bbb=listener.add_targets("listenerId", port=80, targets=[web_server_asg])
+
         
         
         #listnerrule1 =elbv2.ApplicationListenerRule(    
@@ -112,7 +112,8 @@ sudo service httpd start
             "webServiceCluster",
             vpc=vpc        
         )
-
+        
+   
         # Define ECS Cluster Capacity
         micro_service_cluster.add_capacity(
             "microServiceAutoScalingGroup",
@@ -149,16 +150,53 @@ sudo service httpd start
             cluster=micro_service_cluster,
             task_definition=task_definition
         )
+
+                # Deploy Container in the micro Service with an Application Load Balancer
+        
+        #Fargate Task
+        taskDefinition2 = ecs.FargateTaskDefinition(self, 'taskDef',
+            memory_limit_mib = 512,
+            cpu = 256,
+        )
+
+        web_container2=taskDefinition2.add_container('webContainer',
+            image=ecs.ContainerImage.from_registry("dbaxy770928/carsales2:latest"),
+        )
+        
+        port_mapping = ecs.PortMapping(container_port=80)
+        
+        web_container2.add_port_mappings(port_mapping)
+
+        ecs_service2 = ecs.FargateService(self, "Service2",
+            cluster=micro_service_cluster,
+            task_definition=taskDefinition2,
+            assign_public_ip= True
+        )
+
         scalableTaget = ecs_service.auto_scale_task_count(max_capacity=5,min_capacity=1)
         scalableTaget.scale_on_memory_utilization("memory_usage",target_utilization_percent=75)
         scalableTaget.scale_on_cpu_utilization("cpu_usage",target_utilization_percent=70)
         #ecs_service.attach_to_application_target_group()
-        aaa =listener.add_targets("ECS1", port=80, targets=[ecs_service])
+        # Add AutoScaling Group Instances to ALB Target Group
+        #bbb =listener.add_targets("listenerId", port=80, targets=[web_server_asg])
+        #aaa =listener.add_targets("ECS1", port=80, targets=[ecs_service])
+        
+        
+        #ssm.StringListParameter.from_string_list_parameter_name(self,"acm_arn",string_list_parameter_name='/'+env_name+'/acm-arn')
+        acm_arn=ssm.StringParameter.value_for_string_parameter(self,parameter_name='/'+env_name+'/acm-arn')
+        
+        listener.add_redirect_response("http-https",status_code="HTTP_301",port="443",protocol="HTTPS")
+        HTTPSListener =alb.add_listener("https",port=443,certificate_arns=[acm_arn])
+        
+        bbb =HTTPSListener.add_targets("listenerId", port=80, targets=[web_server_asg])
+        aaa =HTTPSListener.add_targets("ECS1", port=80, targets=[ecs_service])
+        ccc =HTTPSListener.add_targets("ECS2", port=80, targets=[ecs_service2])
+
         elbv2.ApplicationListenerRule(self, 
             id="listener rule1", 
             path_pattern="/web/*", 
             priority=1, 
-            listener=listener,
+            listener=HTTPSListener,
             target_groups=[aaa]
         )
 
@@ -166,15 +204,17 @@ sudo service httpd start
             id="listener rule2", 
             path_pattern="/api/*", 
             priority=2, 
-            listener=listener,
+            listener=HTTPSListener,
             target_groups=[bbb]
         )
-        '/'+env_name+'/acm-arn'
-        #ssm.StringListParameter.from_string_list_parameter_name(self,"acm_arn",string_list_parameter_name='/'+env_name+'/acm-arn')
-        acm_arn=ssm.StringParameter.value_for_string_parameter(self,parameter_name='/'+env_name+'/acm-arn')
-        
-        listener.add_redirect_response("http-https",status_code="HTTP_301",port="443",protocol="HTTPS")
-        HTTPSListener =alb.add_listener("https",port=443,certificate_arns=[acm_arn],default_target_groups=[aaa])
+
+        elbv2.ApplicationListenerRule(self, 
+            id="listener rule3", 
+            path_pattern="/test/*", 
+            priority=3, 
+            listener=HTTPSListener,
+            target_groups=[ccc]
+        )
         #elbv2.ApplicationListenerRule()
         # Add AutoScaling Group Instances to ALB Target Group
         # listener.add_targets("listenerId", port=80, targets=[web_server_asg])
