@@ -188,16 +188,16 @@ sudo service httpd start
         listener.add_redirect_response("http-https",status_code="HTTP_301",port="443",protocol="HTTPS")
         HTTPSListener =alb.add_listener("https",port=443,certificate_arns=[acm_arn])
         
-        bbb =HTTPSListener.add_targets("listenerId", port=80, targets=[web_server_asg])
-        aaa =HTTPSListener.add_targets("ECS1", port=80, targets=[ecs_service])
-        ccc =HTTPSListener.add_targets("ECS2", port=80, targets=[ecs_service2])
+        aws_ec2 =HTTPSListener.add_targets("listenerId", port=80, targets=[web_server_asg])
+        aws_ecs =HTTPSListener.add_targets("ECS1", port=80, targets=[ecs_service])
+        aws_fargate =HTTPSListener.add_targets("ECS2", port=80, targets=[ecs_service2])
 
         elbv2.ApplicationListenerRule(self, 
             id="listener rule1", 
             path_pattern="/web/*", 
             priority=1, 
             listener=HTTPSListener,
-            target_groups=[aaa]
+            target_groups=[aws_ec2]
         )
 
         elbv2.ApplicationListenerRule(self, 
@@ -205,7 +205,7 @@ sudo service httpd start
             path_pattern="/api/*", 
             priority=2, 
             listener=HTTPSListener,
-            target_groups=[bbb]
+            target_groups=[aws_ecs]
         )
 
         elbv2.ApplicationListenerRule(self, 
@@ -213,7 +213,7 @@ sudo service httpd start
             path_pattern="/test/*", 
             priority=3, 
             listener=HTTPSListener,
-            target_groups=[ccc]
+            target_groups=[aws_fargate]
         )
         #elbv2.ApplicationListenerRule()
         # Add AutoScaling Group Instances to ALB Target Group
