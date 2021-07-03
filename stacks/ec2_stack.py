@@ -1,8 +1,10 @@
 from aws_cdk import aws_ec2 as ec2
 from aws_cdk import aws_elasticloadbalancingv2 as elbv2
 from aws_cdk import aws_ecs as ecs
+from aws_cdk import aws_efs as efs
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_ssm as ssm
+from aws_cdk import aws_secretsmanager as sm
 from aws_cdk import aws_autoscaling as autoscaling
 from aws_cdk import aws_ecs_patterns as ecs_patterns
 from aws_cdk import core
@@ -93,9 +95,11 @@ sudo service httpd start
         web_server_asg.connections.allow_from(alb, ec2.Port.tcp(80),
                                               description="Allows ASG Security Group receive traffic from ALB")
 
+        DB_SECRET_ARN= ssm.StringParameter.value_for_string_parameter(self, parameter_name='/'+env_name+'/db-secret-arn')
+        DB_SECRET=sm.Secret.from_secret_arn(self,"DB_SECRET",DB_SECRET_ARN)
 
-        
-        
+        db_username= ecs.Secret.from_secrets_manager(DB_SECRET,field="username")
+        db_password=ecs.Secret.from_secrets_manager(DB_SECRET,field="password")
         #listnerrule1 =elbv2.ApplicationListenerRule(    
         #    self, 
         #    id="listener rule1", 
@@ -112,38 +116,57 @@ sudo service httpd start
             "webServiceCluster",
             vpc=vpc        
         )
-        
-   
+           
         # Define ECS Cluster Capacity
-        micro_service_cluster.add_capacity(
-            "microServiceAutoScalingGroup",
-            instance_type=ec2.InstanceType("t2.micro")
-        )
-
+        #micro_service_cluster.add_capacity(
+        #    "microServiceAutoScalingGroup",
+        #    instance_type=ec2.InstanceType("t2.micro")
+        #)
+        role = iam.Role(self, "EC2SSMRole",
+                        description="Allow EC2 instances to interact with SSM Session Manager",
+                        assumed_by=iam.ServicePrincipal("ec2.amazonaws.com"),
+                        managed_policies=[iam.ManagedPolicy.from_aws_managed_policy_name("AmazonSSMManagedInstanceCore")]
+                        )
         # Deploy Container in the micro Service & Attach a LoadBalancer
         # Or add customized capacity. Be sure to start the Amazon ECS-optimized AMI.
-        auto_scaling_group = autoscaling.AutoScalingGroup(self, "ASG",
+        auto_scaling_group = autoscaling.AutoScalingGroup(self, "ECSASG",
             vpc=vpc,
             instance_type=ec2.InstanceType("t2.micro"),
+            role= role,
             machine_image=ecs.EcsOptimizedImage.amazon_linux2(),
-            # Or use Amazon ECS-Optimized Amazon Linux 2 AMI
-            # machineImage: EcsOptimizedImage.amazonLinux2(),
             vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PRIVATE),
             desired_capacity=1
         )
 
         micro_service_cluster.add_auto_scaling_group(auto_scaling_group)
 
-        task_definition = ecs.Ec2TaskDefinition(self, "TaskDef")
+        efs_id=ssm.StringParameter.value_for_string_parameter(self,parameter_name='/'+env_name+'/efs-filesystem-id')
+        
+        efs_container_volume = ecs.Volume(
+                name="efs_container_volume",
+                efs_volume_configuration=ecs.EfsVolumeConfiguration(
+                file_system_id=efs_id
+            )
+        )
+        task_definition = ecs.Ec2TaskDefinition(self, "TaskDef",volumes=[efs_container_volume])
 
         web_container = task_definition.add_container("DefaultContainer",
             image=ecs.ContainerImage.from_registry("dbaxy770928/carsales1:latest"),
-            memory_limit_mib = 512                                
+            memory_limit_mib = 512,
+            secrets={'Username':db_username,'Password':db_password}                                
+        )
+
+        ecs_mount=ecs.MountPoint(container_path="/efs",
+                read_only=False,
+                source_volume= efs_container_volume.name
         )
         
+        web_container.add_mount_points(ecs_mount)   
         port_mapping = ecs.PortMapping(container_port=80)
-        
+
         web_container.add_port_mappings(port_mapping)
+        
+
 
         # Instantiate an Amazon ECS Service
         ecs_service = ecs.Ec2Service(self, "Service",
@@ -153,20 +176,39 @@ sudo service httpd start
 
                 # Deploy Container in the micro Service with an Application Load Balancer
         
+        efs_id=ssm.StringParameter.value_for_string_parameter(self,parameter_name='/'+env_name+'/efs-filesystem-id')
+        
+        efs_container_volume = ecs.Volume(
+                name="efs_container_volume",
+                efs_volume_configuration=ecs.EfsVolumeConfiguration(
+                file_system_id=efs_id
+            )
+        )
         #Fargate Task
         taskDefinition2 = ecs.FargateTaskDefinition(self, 'taskDef',
             memory_limit_mib = 512,
             cpu = 256,
+            volumes=[efs_container_volume]
         )
+
+
 
         web_container2=taskDefinition2.add_container('webContainer',
             image=ecs.ContainerImage.from_registry("dbaxy770928/carsales2:latest"),
+            secrets={'Username':db_username,'Password':db_password}
         )
         
         port_mapping = ecs.PortMapping(container_port=80)
         
         web_container2.add_port_mappings(port_mapping)
-
+        
+        
+        ecs_mount=ecs.MountPoint(container_path="/efs",
+                read_only=False,
+                source_volume= efs_container_volume.name
+        )
+        
+        web_container2.add_mount_points(ecs_mount)
         ecs_service2 = ecs.FargateService(self, "Service2",
             cluster=micro_service_cluster,
             task_definition=taskDefinition2,
@@ -233,4 +275,11 @@ sudo service httpd start
                                       value=alb.load_balancer_arn,
                                       description="Web Server ALB ARN",
                                       export_name="ALB-ARN")
+
+        output_efs = core.CfnOutput(self,
+                                     "EFS-ID",
+                                      value=efs_container_volume.efs_volume_configuration.file_system_id,
+                                      description="EFS-ID",
+                                      export_name="EFS-ID")
+                                      
                           
