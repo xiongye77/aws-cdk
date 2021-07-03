@@ -60,3 +60,72 @@ class RDSStack(core.Stack):
             string_value=prj_name+env_name
         )
 
+
+        
+        
+        
+        
+from aws_cdk import aws_ec2 as ec2
+from aws_cdk import aws_elasticloadbalancingv2 as elbv2
+from aws_cdk import aws_ecs as ecs
+from aws_cdk import aws_efs as efs
+from aws_cdk import aws_iam as iam
+from aws_cdk import aws_rds as rds
+from aws_cdk import aws_ssm as ssm
+from aws_cdk import aws_secretsmanager as sm
+from aws_cdk import aws_autoscaling as autoscaling
+from aws_cdk import aws_ecs_patterns as ecs_patterns
+from aws_cdk import core
+import json
+
+class RDSStack(core.Stack):
+
+    def __init__(self, scope: core.Construct, id: str, vpc: ec2.Vpc,lambdasg: ec2.SecurityGroup, bastionsg: ec2.SecurityGroup, kmskey, **kwargs) -> None:
+        super().__init__(scope, id, **kwargs)
+
+        prj_name = self.node.try_get_context("project_name")
+        env_name = self.node.try_get_context("env")
+
+        json_template={'username':'admin'}
+        db_creds = sm.Secret(self,'db-secret',
+            secret_name=env_name+'/rds-secret',
+            generate_secret_string=sm.SecretStringGenerator(
+                include_space=False,
+                password_length=12,
+                generate_string_key='password',
+                exclude_punctuation=True,
+                secret_string_template=json.dumps(json_template)
+            )
+        )
+         
+        
+        db_mysql = rds.ServerlessCluster(
+            self, "WordpressServerless",
+            engine=rds.DatabaseClusterEngine.AURORA_MYSQL,
+            default_database_name="WordpressDatabase",
+            vpc=vpc,
+            scaling=rds.ServerlessScalingOptions(
+            auto_pause=core.Duration.seconds(0)
+            ),
+            deletion_protection=False,
+            backup_retention=core.Duration.days(7),
+            removal_policy=core.RemovalPolicy.DESTROY,
+        )
+        #db_mysql.secret
+        db_mysql.connections.allow_default_port_from(lambdasg, "Access from Lambda functions")
+        db_mysql.connections.allow_default_port_from(bastionsg,"Allow from bastion host")
+
+        #SSM Parameter
+        ssm.StringParameter(self, 'db-host',
+            parameter_name='/'+env_name+'/db-host',
+            string_value=db_mysql.cluster_endpoint.hostname
+        )
+        
+        ssm.StringParameter(self, 'db-secret-arn',
+            parameter_name='/'+env_name+'/db-secret-arn',
+            string_value=db_mysql.secret.secret_arn
+        )
+        ssm.StringParameter(self,'db-name',
+            parameter_name='/'+env_name+'/db-name',
+            string_value=prj_name+env_name
+        )
