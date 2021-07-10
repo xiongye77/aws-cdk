@@ -20,6 +20,7 @@ from stacks.waf_stack import WafStack
 from stacks.route53_stack import DnsStack
 from stacks.acm_stack import ACMStack
 from stacks.cloudtrail_stack import CloudTrailStack
+from stacks.efs_stack import EFSStack
 from stacks.kibana_stack import KibanaStack
 #from stacks.ecs_stack import ECSStack
 
@@ -27,12 +28,14 @@ app = core.App()
 
 vpc_stack = VPCStack(app, 'vpc')
 security_stack = SecurityStack(app, 'security-stack', vpc=vpc_stack.vpc)
-ec2server_stack = EC2ServerStack(app,'ec2',vpc=vpc_stack.vpc)
+
 #ecs_stack = ECSStack(app,'ecs',vpc=vpc_stack.vpc)
 bastion_stack = BastionStack(app, 'bastion', vpc=vpc_stack.vpc, sg=security_stack.bastion_sg)
 kms_stack = KMSStack(app,'kms')
 s3_stack = S3Stack(app,'s3buckets')
+efs_stack = EFSStack(app, 'efs',vpc=vpc_stack.vpc)
 rds_stack = RDSStack(app,'rds', vpc=vpc_stack.vpc, lambdasg=security_stack.lambda_sg, bastionsg=security_stack.bastion_sg, kmskey=kms_stack.kms_rds)
+ec2server_stack = EC2ServerStack(app,'ec2',vpc=vpc_stack.vpc)
 redis_stack = RedisStack(app,'redis', vpc=vpc_stack.vpc, redissg=core.Fn.import_value('redis-sg-export'))
 cognito_stack = CognitoStack(app,'cognito')
 apigw_stack = APIStack(app,'apigw')
